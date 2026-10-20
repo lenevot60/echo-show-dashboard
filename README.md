@@ -42,6 +42,15 @@ De skill staat in het Amazon-ontwikkelaarsaccount van de eigenaar als Alexa-host
 naar de Echo Show 11 gestuurd ("Installation Simulated Successfully"). De scripts in `tools/console/` deden dat via
 een apart Chrome-profiel waarin de eigenaar eenmalig is ingelogd (`node tools/console/browser.mjs start`).
 
+Gecontroleerd na afloop (21 oktober, 00:20): een `LaunchRequest` via het tabblad Test, Manual JSON geeft status
+SUCCESSFUL, de spraak "Hier is je dashboard." en de directive `Alexa.Presentation.APL.RenderDocument`; de code en
+`credentials.json` staan dus goed. De Alexa Simulator stuurde "open mijn dashboard" op dat moment nog niet naar de skill
+(antwoord "Ik weet niet zeker hoe ik je daarmee kan helpen"); het Nederlandse model was pas om 00:05 opnieuw gebouwd,
+nadat bleek dat de import de aanroepnaam op "change me" had gezet. Test het daarom op het toestel zelf.
+
+Let op bij een import in de console: de aanroepnaam uit `interactionModels/custom/nl-NL.json` komt niet mee. Zet het
+model daarna via Build, Interaction Model, JSON Editor, dan Save en Build skill.
+
 ## Installeren (eenmalig, ongeveer een half uur)
 
 Je hebt nodig: een Amazon-account dat op de Echo Show is ingelogd, een gratis Alexa-ontwikkelaarsaccount op
