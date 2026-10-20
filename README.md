@@ -34,6 +34,14 @@ Alexa-skill met APL, en dat is dit project. Het plan met bronnen staat in `docs/
 4. De webtegel voert het APL-commando `OpenURL` uit; Silk opent je pagina. Na een time-out valt het toestel terug op
    het Alexa-startscherm; dat is een beperking van het apparaat, niet van deze skill.
 
+## Stand van zaken (20 oktober 2026, 's avonds)
+
+De skill staat in het Amazon-ontwikkelaarsaccount van de eigenaar als Alexa-hosted skill "Mijn dashboard"
+(id in `tools/console/skill-id.txt`): geïmporteerd vanaf deze repository, model gebouwd, interfaces aan,
+`credentials.json` in de hosted code gezet en gedeployd, testen op Development, en de widget via de authoring tool
+naar de Echo Show 11 gestuurd ("Installation Simulated Successfully"). De scripts in `tools/console/` deden dat via
+een apart Chrome-profiel waarin de eigenaar eenmalig is ingelogd (`node tools/console/browser.mjs start`).
+
 ## Installeren (eenmalig, ongeveer een half uur)
 
 Je hebt nodig: een Amazon-account dat op de Echo Show is ingelogd, een gratis Alexa-ontwikkelaarsaccount op
