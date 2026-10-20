@@ -7,6 +7,35 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const https = require('node:https');
+
+/**
+ * Alexa-hosted skills may still run on Node.js 16, which has no global fetch. This small replacement covers what
+ * this module needs: GET/POST with headers and a text body, and a response with ok, status, text() and json().
+ */
+function fetchViaHttps(url, init = {}) {
+  return new Promise((resolve, reject) => {
+    const req = https.request(url, { method: init.method || 'GET', headers: init.headers || {} }, (res) => {
+      const chunks = [];
+      res.on('data', (c) => chunks.push(c));
+      res.on('end', () => {
+        const text = Buffer.concat(chunks).toString('utf8');
+        resolve({
+          ok: res.statusCode >= 200 && res.statusCode < 300,
+          status: res.statusCode,
+          text: async () => text,
+          json: async () => JSON.parse(text),
+        });
+      });
+    });
+    req.on('error', reject);
+    if (init.body) req.write(init.body);
+    req.end();
+  });
+}
+
+const fetchImplStandaard = typeof fetch === 'function' ? fetch : fetchViaHttps;
+
 const FEED_URL = 'https://data.buienradar.nl/2.0/feed/json';
 const LWA_TOKEN_URL = 'https://api.amazon.com/auth/o2/token';
 const NAMESPACE = 'dashboard';
@@ -84,7 +113,7 @@ function weerUitFeed(feed, stationId) {
   };
 }
 
-async function haalWeer(stationId, fetchImpl = fetch) {
+async function haalWeer(stationId, fetchImpl = fetchImplStandaard) {
   const r = await fetchImpl(FEED_URL);
   if (!r.ok) throw new Error(`Buienradar ${r.status}`);
   return weerUitFeed(await r.json(), stationId);
@@ -100,7 +129,7 @@ function notities() {
 }
 
 /** Everything the widget and the full screen show. Never throws: a failing source becomes `fout`. */
-async function verzamel({ fetchImpl = fetch, nu = new Date() } = {}) {
+async function verzamel({ fetchImpl = fetchImplStandaard, nu = new Date() } = {}) {
   const c = config();
   let weer = null;
   let fout = null;
@@ -122,7 +151,7 @@ async function verzamel({ fetchImpl = fetch, nu = new Date() } = {}) {
   };
 }
 
-async function lwaToken({ clientId, clientSecret }, fetchImpl = fetch) {
+async function lwaToken({ clientId, clientSecret }, fetchImpl = fetchImplStandaard) {
   const body = new URLSearchParams({
     grant_type: 'client_credentials',
     client_id: clientId,
@@ -142,7 +171,7 @@ async function lwaToken({ clientId, clientSecret }, fetchImpl = fetch) {
  * Puts the content object in the device data store of one user or up to 20 devices
  * (Data Store REST API, PUT_OBJECT; payload at most 16 KB, 1 MB per skill per device).
  */
-async function pushNaarDataStore({ content, target, endpoint, creds, fetchImpl = fetch }) {
+async function pushNaarDataStore({ content, target, endpoint, creds, fetchImpl = fetchImplStandaard }) {
   if (!creds || !creds.clientId || !creds.clientSecret) throw new Error('Client id en secret ontbreken');
   const token = await lwaToken(creds, fetchImpl);
   const r = await fetchImpl(endpoint || config().datastoreEndpoint, {
@@ -175,4 +204,5 @@ module.exports = {
   lwaToken,
   pushNaarDataStore,
   formatTijd,
+  fetchViaHttps,
 };

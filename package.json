@@ -1,0 +1,15 @@
+{
+  "name": "echo-show-dashboard",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Eigen dashboard voor de Echo Show 11: Alexa-skill (lambda/, skill-package/) en hulpscripts (tools/)",
+  "type": "module",
+  "scripts": {
+    "test": "cd lambda && npm test",
+    "push": "node tools/push.mjs",
+    "console": "node tools/console/browser.mjs start"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.56.1"
+  }
+}

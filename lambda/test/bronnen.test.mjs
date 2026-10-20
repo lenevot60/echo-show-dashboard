@@ -87,3 +87,10 @@ test('pushNaarDataStore gets a token with the datastore scope and sends one PUT_
 test('pushNaarDataStore refuses to run without credentials', async () => {
   await assert.rejects(() => bronnen.pushNaarDataStore({ content: {}, target: {}, creds: {} }), /ontbreken/)
 })
+
+test('the https fallback fetches the real Buienradar feed like fetch does', async () => {
+  const r = await bronnen.fetchViaHttps(bronnen.FEED_URL)
+  assert.equal(r.ok, true)
+  const feed = await r.json()
+  assert.ok(Array.isArray(feed.actual.stationmeasurements))
+})
