@@ -4,3 +4,4 @@ lambda/credentials.json
 .ask/
 *.log
 .DS_Store
+tools/console/shots/
