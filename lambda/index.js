@@ -62,12 +62,13 @@ function renderDashboard(content, extra = {}) {
 function buildSkill(deps = {}) {
   const verzamel = deps.verzamel || bronnen.verzamel;
   const push = deps.push || bronnen.pushNaarDataStore;
+  const credentials = deps.credentials || bronnen.credentials;
   const logger = deps.logger || console;
 
   /** Fresh content, pushed to the widget of this user when the skill has its client credentials. */
   async function vernieuw(handlerInput) {
     const content = await verzamel();
-    const creds = bronnen.credentials();
+    const creds = credentials();
     if (!creds.clientId || !creds.clientSecret) {
       logger.log('Geen client id en secret: alleen het scherm wordt bijgewerkt, de widget niet');
       return { content, gepusht: false };

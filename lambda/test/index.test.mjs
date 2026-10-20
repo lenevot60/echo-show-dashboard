@@ -31,6 +31,8 @@ function maak(overrides = {}) {
       pushes.push(args)
       return { results: [] }
     },
+    // Tests never read the real credentials.json; the env vars decide per test.
+    credentials: () => ({ clientId: process.env.ALEXA_CLIENT_ID || '', clientSecret: process.env.ALEXA_CLIENT_SECRET || '' }),
     logger: stil,
     ...overrides,
   }).create()
