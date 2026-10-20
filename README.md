@@ -48,6 +48,10 @@ SUCCESSFUL, de spraak "Hier is je dashboard." en de directive `Alexa.Presentatio
 (antwoord "Ik weet niet zeker hoe ik je daarmee kan helpen"); het Nederlandse model was pas om 00:05 opnieuw gebouwd,
 nadat bleek dat de import de aanroepnaam op "change me" had gezet. Test het daarom op het toestel zelf.
 
+Aanroep (21 oktober, 00:45): de simulator start de skill in het Engels ("open my overview", "Here is your dashboard.")
+maar niet in het Nederlands, ook niet met de nieuwe naam "mijn overzicht". Zet de Echo Show daarom op Engels (US of
+UK) zolang Nederlands voor eigen skills niet werkt; de inhoud van widget en scherm blijft Nederlands.
+
 Let op bij een import in de console: de aanroepnaam uit `interactionModels/custom/nl-NL.json` komt niet mee. Zet het
 model daarna via Build, Interaction Model, JSON Editor, dan Save en Build skill.
 
