@@ -13,7 +13,7 @@ Alexa-skill met APL, en dat is dit project. Het plan met bronnen staat in `docs/
 | Onderdeel                  | Waar                                                        | Wat het doet                                                                                                   |
 | -------------------------- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
 | Skillmanifest              | `skill-package/skill.json`                                  | Interfaces APL, Data Store, Package Manager, extensie `alexaext:datastore:10`; talen nl-NL en en-GB            |
-| Spraakmodel                | `skill-package/interactionModels/custom/{nl-NL,en-GB}.json` | Aanroepnaam "mijn dashboard"; intents: dashboard tonen, verversen, webdashboard openen, gebruikers-id tonen  |
+| Spraakmodel                | `skill-package/interactionModels/custom/{nl-NL,en-GB}.json` | Aanroepnaam "mijn overzicht" (Engels: "my overview"); intents: dashboard tonen, verversen, webdashboard openen, gebruikers-id tonen  |
 | Widget                     | `skill-package/dataStorePackages/dashboard-widget/`         | Formaat WIDGET_M; leest de device data store (namespace `dashboard`, key `overzicht`); knoppen Dashboard, Ververs, Web |
 | Dashboardscherm            | `lambda/apl/dashboard.json`                                 | Volledig scherm voor de Show 11: weer groot, verwachting, notities, knoppen Ververs en Webdashboard             |
 | Skillcode                  | `lambda/index.js`                                           | Handlers voor spraak, tikken (SendEvent), installatie van de widget, verversen en de gebruikers-id             |
@@ -24,7 +24,7 @@ Alexa-skill met APL, en dat is dit project. Het plan met bronnen staat in `docs/
 
 ## Hoe de gegevens stromen
 
-1. Je zegt "Alexa, open mijn dashboard" of tikt in de widget op Dashboard. De skill haalt het weer op bij
+1. Je zegt "Alexa, open mijn overzicht" of tikt in de widget op Dashboard. De skill haalt het weer op bij
    Buienradar, leest `notities.json` en toont het volledige scherm.
 2. Zodra je de widget installeert uit de Widget Gallery, stuurt Alexa `UsagesInstalled` naar de skill. Die vult meteen
    de data store op je toestel via de Data Store REST API. De widget leest alleen die data store; een widget doet zelf
@@ -61,7 +61,7 @@ developer.amazon.com met **hetzelfde** Amazon-account, en een openbare Git-URL v
 2. **Developer Console** (developer.amazon.com/alexa/console/ask): Create Skill. Naam "Mijn dashboard", primaire
    taal **Dutch (NL)**, type Custom, hosting **Alexa-hosted (Node.js)**. Bij Templates kies je **Import skill** en
    plak je de Git-URL. Importeren duurt een paar minuten; de console maakt zelf de Lambda aan.
-3. **Build > Invocations**: controleer dat de aanroepnaam "mijn dashboard" is; klik **Build Model**. Doe hetzelfde
+3. **Build > Invocations**: controleer dat de aanroepnaam "mijn overzicht" is; klik **Build Model**. Doe hetzelfde
    onder de taal English (UK) als het toestel op Engels staat.
 4. **Build > Interfaces**: controleer dat Alexa Presentation Language, Data Store en Data Store Packages aan staan
    (ze komen uit `skill.json`). Sla op en bouw opnieuw als je iets wijzigt.
@@ -69,12 +69,12 @@ developer.amazon.com met **hetzelfde** Amazon-account, en een openbare Git-URL v
    console (tabblad Code) het bestand `credentials.json` naast `index.js` met de inhoud van
    `credentials.example.json`, vul de waarden in en klik **Deploy**. Zet ze ook in `.env` op je Mac (voor
    `tools/push.mjs`). Nooit committen.
-6. **Test**: zet het tabblad Test op **Development**. Zeg tegen de Echo Show "Alexa, open mijn dashboard". Het volledige
+6. **Test**: zet het tabblad Test op **Development**. Zeg tegen de Echo Show "Alexa, open mijn overzicht". Het volledige
    scherm verschijnt met het weer van Buienradar.
 7. **Widget installeren**: Build > Multimodal Responses > Widget. Open "dashboard-widget", kies onderaan je Echo Show 11
    en klik **Install** / **Send to Device**. De widget verschijnt in het widgetpaneel. Daarna staat hij ook in de
    Widget Gallery op het toestel (menu-icoon of Widget Gallery-icoon, afhankelijk van Alexa+ of klassieke Alexa).
-8. **Gebruikers-id voor de push**: zeg "Alexa, vraag mijn dashboard om mijn gebruikers-id". De id staat op het scherm en
+8. **Gebruikers-id voor de push**: zeg "Alexa, vraag mijn overzicht om mijn gebruikers-id". De id staat op het scherm en
    als kaart in de Alexa-app (Activiteit). Zet hem in `.env` als `ALEXA_USER_ID` en draai `node tools/push.mjs`.
    Werkt dat, installeer dan het launchd-sjabloon uit `tools/` voor elke tien minuten.
 

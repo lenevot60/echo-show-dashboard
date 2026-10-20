@@ -8,22 +8,48 @@
           "summary": "Eigen dashboard en widget voor de Echo Show: weer, notities en je webdashboard.",
           "description": "Persoonlijke skill voor de Echo Show 11. Een widget in de Widget Gallery met het weer van Buienradar en je eigen notities, een volledig dashboardscherm en een tegel die je eigen webdashboard opent. De gegevens komen van je eigen backend of van het script tools/push.mjs.",
           "examplePhrases": [
-            "Alexa, open mijn dashboard",
-            "Alexa, vraag mijn dashboard om te verversen",
-            "Alexa, vraag mijn dashboard om het webdashboard te openen"
+            "Alexa, open mijn overzicht",
+            "Alexa, vraag mijn overzicht om te verversen",
+            "Alexa, vraag mijn overzicht om het webdashboard te openen"
           ],
-          "keywords": ["dashboard", "widget", "weer", "notities"]
+          "keywords": [
+            "dashboard",
+            "widget",
+            "weer",
+            "notities"
+          ]
         },
         "en-GB": {
           "name": "My dashboard",
           "summary": "Own dashboard and widget for the Echo Show: weather, notes and your web dashboard.",
           "description": "Personal skill for the Echo Show 11. A widget in the Widget Gallery with the weather from Buienradar and your own notes, a full dashboard screen and a tile that opens your own web dashboard. The data comes from your own backend or from the script tools/push.mjs.",
           "examplePhrases": [
-            "Alexa, open my dashboard",
-            "Alexa, ask my dashboard to refresh",
-            "Alexa, ask my dashboard to open the web dashboard"
+            "Alexa, open my overview",
+            "Alexa, ask my overview to refresh",
+            "Alexa, ask my overview to open the web dashboard"
           ],
-          "keywords": ["dashboard", "widget", "weather", "notes"]
+          "keywords": [
+            "dashboard",
+            "widget",
+            "weather",
+            "notes"
+          ]
+        },
+        "en-US": {
+          "name": "My dashboard",
+          "summary": "Own dashboard and widget for the Echo Show: weather, notes and your web dashboard.",
+          "description": "Personal skill for the Echo Show 11. A widget in the Widget Gallery with the weather from Buienradar and your own notes, a full dashboard screen and a tile that opens your own web dashboard. The data comes from your own backend or from the script tools/push.mjs.",
+          "examplePhrases": [
+            "Alexa, open my overview",
+            "Alexa, ask my overview to refresh",
+            "Alexa, ask my overview to open the web dashboard"
+          ],
+          "keywords": [
+            "dashboard",
+            "widget",
+            "weather",
+            "notes"
+          ]
         }
       },
       "isAvailableWorldwide": true,
@@ -36,27 +62,107 @@
         "interfaces": [
           {
             "type": "ALEXA_DATASTORE_PACKAGEMANAGER",
-            "packages": [{ "id": "dashboard-widget" }]
+            "packages": [
+              {
+                "id": "dashboard-widget"
+              }
+            ]
           },
-          { "type": "ALEXA_DATA_STORE" },
+          {
+            "type": "ALEXA_DATA_STORE"
+          },
           {
             "type": "ALEXA_PRESENTATION_APL",
             "supportedViewports": [
-              { "mode": "HUB", "shape": "ROUND", "minWidth": 100, "maxWidth": 599, "minHeight": 100, "maxHeight": 599 },
-              { "mode": "HUB", "shape": "RECTANGLE", "minWidth": 960, "maxWidth": 1279, "minHeight": 100, "maxHeight": 599 },
-              { "mode": "HUB", "shape": "RECTANGLE", "minWidth": 960, "maxWidth": 1279, "minHeight": 600, "maxHeight": 959 },
-              { "mode": "HUB", "shape": "RECTANGLE", "minWidth": 1280, "maxWidth": 1920, "minHeight": 600, "maxHeight": 1279 },
-              { "mode": "HUB", "shape": "RECTANGLE", "minWidth": 1920, "maxWidth": 2560, "minHeight": 960, "maxHeight": 1279 },
-              { "mode": "HUB", "shape": "RECTANGLE", "minWidth": 960, "maxWidth": 1279, "minHeight": 1920, "maxHeight": 2560 },
-              { "mode": "TV", "shape": "RECTANGLE", "minWidth": 960, "maxWidth": 960, "minHeight": 540, "maxHeight": 540 },
-              { "mode": "MOBILE", "shape": "RECTANGLE", "minWidth": 600, "maxWidth": 959, "minHeight": 320, "maxHeight": 1920 },
-              { "mode": "MOBILE", "shape": "RECTANGLE", "minWidth": 960, "maxWidth": 1279, "minHeight": 320, "maxHeight": 1920 },
-              { "mode": "MOBILE", "shape": "RECTANGLE", "minWidth": 1280, "maxWidth": 1920, "minHeight": 320, "maxHeight": 1920 }
+              {
+                "mode": "HUB",
+                "shape": "ROUND",
+                "minWidth": 100,
+                "maxWidth": 599,
+                "minHeight": 100,
+                "maxHeight": 599
+              },
+              {
+                "mode": "HUB",
+                "shape": "RECTANGLE",
+                "minWidth": 960,
+                "maxWidth": 1279,
+                "minHeight": 100,
+                "maxHeight": 599
+              },
+              {
+                "mode": "HUB",
+                "shape": "RECTANGLE",
+                "minWidth": 960,
+                "maxWidth": 1279,
+                "minHeight": 600,
+                "maxHeight": 959
+              },
+              {
+                "mode": "HUB",
+                "shape": "RECTANGLE",
+                "minWidth": 1280,
+                "maxWidth": 1920,
+                "minHeight": 600,
+                "maxHeight": 1279
+              },
+              {
+                "mode": "HUB",
+                "shape": "RECTANGLE",
+                "minWidth": 1920,
+                "maxWidth": 2560,
+                "minHeight": 960,
+                "maxHeight": 1279
+              },
+              {
+                "mode": "HUB",
+                "shape": "RECTANGLE",
+                "minWidth": 960,
+                "maxWidth": 1279,
+                "minHeight": 1920,
+                "maxHeight": 2560
+              },
+              {
+                "mode": "TV",
+                "shape": "RECTANGLE",
+                "minWidth": 960,
+                "maxWidth": 960,
+                "minHeight": 540,
+                "maxHeight": 540
+              },
+              {
+                "mode": "MOBILE",
+                "shape": "RECTANGLE",
+                "minWidth": 600,
+                "maxWidth": 959,
+                "minHeight": 320,
+                "maxHeight": 1920
+              },
+              {
+                "mode": "MOBILE",
+                "shape": "RECTANGLE",
+                "minWidth": 960,
+                "maxWidth": 1279,
+                "minHeight": 320,
+                "maxHeight": 1920
+              },
+              {
+                "mode": "MOBILE",
+                "shape": "RECTANGLE",
+                "minWidth": 1280,
+                "maxWidth": 1920,
+                "minHeight": 320,
+                "maxHeight": 1920
+              }
             ]
           },
           {
             "type": "ALEXA_EXTENSION",
-            "requestedExtensions": [{ "uri": "alexaext:datastore:10" }]
+            "requestedExtensions": [
+              {
+                "uri": "alexaext:datastore:10"
+              }
+            ]
           }
         ],
         "locales": {}
@@ -68,7 +174,11 @@
       "isChildDirected": false,
       "isExportCompliant": true,
       "containsAds": false,
-      "locales": { "nl-NL": {}, "en-GB": {} }
+      "locales": {
+        "nl-NL": {},
+        "en-GB": {},
+        "en-US": {}
+      }
     }
   }
 }

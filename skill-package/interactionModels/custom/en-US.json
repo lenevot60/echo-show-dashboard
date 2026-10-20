@@ -1,0 +1,67 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "my overview",
+      "intents": [
+        {
+          "name": "AMAZON.CancelIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.HelpIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.StopIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.NavigateHomeIntent",
+          "samples": []
+        },
+        {
+          "name": "AMAZON.FallbackIntent",
+          "samples": []
+        },
+        {
+          "name": "OpenDashboardIntent",
+          "slots": [],
+          "samples": [
+            "open the dashboard",
+            "show the dashboard",
+            "show my overview"
+          ]
+        },
+        {
+          "name": "OpenWebIntent",
+          "slots": [],
+          "samples": [
+            "open the web dashboard",
+            "open the web page",
+            "open the website"
+          ]
+        },
+        {
+          "name": "RefreshIntent",
+          "slots": [],
+          "samples": [
+            "refresh",
+            "refresh the data",
+            "update the dashboard",
+            "update the widget"
+          ]
+        },
+        {
+          "name": "ShowUserIdIntent",
+          "slots": [],
+          "samples": [
+            "show my user id",
+            "what is my user id",
+            "show the push id"
+          ]
+        }
+      ],
+      "types": []
+    }
+  }
+}
