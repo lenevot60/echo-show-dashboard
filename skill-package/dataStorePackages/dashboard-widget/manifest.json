@@ -4,7 +4,11 @@
     "version": "1.0.0",
     "installStateChanges": "INFORM",
     "updateStateChanges": "INFORM",
-    "presentationDefinitions": [{ "url": "presentations/default.tpl" }],
+    "presentationDefinitions": [
+      {
+        "url": "presentations/default.tpl"
+      }
+    ],
     "appliesTo": "${viewport.mode == 'HUB'}"
   },
   "packageVersion": "1.0",
@@ -18,9 +22,15 @@
           "metadata": {
             "name": "Mijn dashboard",
             "description": "Weer, je notities en een tegel naar je eigen webdashboard. Gegevens van je eigen backend.",
-            "keywords": ["dashboard", "weer", "notities"],
+            "keywords": [
+              "dashboard",
+              "weer",
+              "notities"
+            ],
             "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/icon-450.png",
-            "previews": ["https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/preview-328x552.png"]
+            "previews": [
+              "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/preview-328x552.png"
+            ]
           }
         }
       ],
@@ -30,9 +40,33 @@
           "metadata": {
             "name": "My dashboard",
             "description": "Weather, your notes and a tile to your own web dashboard. Data from your own backend.",
-            "keywords": ["dashboard", "weather", "notes"],
+            "keywords": [
+              "dashboard",
+              "weather",
+              "notes"
+            ],
             "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/icon-450.png",
-            "previews": ["https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/preview-328x552.png"]
+            "previews": [
+              "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/preview-328x552.png"
+            ]
+          }
+        }
+      ],
+      "en-US": [
+        {
+          "targetViewport": "WIDGET_M",
+          "metadata": {
+            "name": "My dashboard",
+            "description": "Weather, your notes and a tile to your own web dashboard. Data from your own backend.",
+            "keywords": [
+              "dashboard",
+              "weather",
+              "notes"
+            ],
+            "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/icon-450.png",
+            "previews": [
+              "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/preview-328x552.png"
+            ]
           }
         }
       ]
