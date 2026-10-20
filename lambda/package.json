@@ -1,0 +1,15 @@
+{
+  "name": "echo-show-dashboard-skill",
+  "version": "0.1.0",
+  "description": "Eigen dashboard voor de Echo Show 11: widget, volledig APL-scherm en webtegel (Alexa-skill, Alexa-hosted)",
+  "main": "index.js",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "ask-sdk-core": "^2.14.0",
+    "ask-sdk-model": "^1.86.0"
+  }
+}

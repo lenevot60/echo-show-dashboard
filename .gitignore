@@ -1,0 +1,6 @@
+node_modules/
+.env
+lambda/credentials.json
+.ask/
+*.log
+.DS_Store

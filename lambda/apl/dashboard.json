@@ -1,0 +1,186 @@
+{
+  "type": "APL",
+  "version": "2024.3",
+  "description": "Full-screen dashboard for the Echo Show (landscape hub). Datasource `ds` is the same object the widget reads from the data store, plus optional openWeb and gebruikersId.",
+  "import": [{ "name": "alexa-layouts", "version": "1.7.0" }],
+  "resources": [
+    {
+      "colors": {
+        "vlak": "#0F1115",
+        "kaart": "#1A1D24",
+        "inkt": "#FFFFFF",
+        "inkt2": "#C9CDD6",
+        "inkt3": "#8A90A0",
+        "accent": "#F2B705",
+        "accentInkt": "#14161C"
+      }
+    }
+  ],
+  "onMount": [
+    { "type": "OpenURL", "when": "${payload.ds.openWeb == true && payload.ds.web != null}", "source": "${payload.ds.web.url}" }
+  ],
+  "layouts": {
+    "Kaart": {
+      "parameters": [{ "name": "kop", "type": "string" }],
+      "items": [
+        {
+          "type": "Frame",
+          "backgroundColor": "@kaart",
+          "borderRadius": 24,
+          "grow": 1,
+          "shrink": 1,
+          "item": {
+            "type": "Container",
+            "padding": 28,
+            "height": "100%",
+            "items": [
+              { "type": "Text", "text": "${kop}", "fontSize": 20, "fontWeight": "700", "color": "@inkt3", "paddingBottom": 12 },
+              { "type": "Container", "grow": 1, "items": "${children}" }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "mainTemplate": {
+    "parameters": ["payload"],
+    "items": [
+      {
+        "type": "Container",
+        "width": "100vw",
+        "height": "100vh",
+        "backgroundColor": "@vlak",
+        "paddingLeft": 48,
+        "paddingRight": 48,
+        "paddingTop": 36,
+        "paddingBottom": 28,
+        "items": [
+          {
+            "type": "Container",
+            "direction": "row",
+            "alignItems": "baseline",
+            "items": [
+              { "type": "Text", "text": "${payload.ds.titel}", "fontSize": 44, "fontWeight": "700", "color": "@inkt", "grow": 1 },
+              { "type": "Text", "text": "Bijgewerkt ${payload.ds.bijgewerktTekst}", "fontSize": 20, "color": "@inkt3" }
+            ]
+          },
+          {
+            "type": "Container",
+            "direction": "row",
+            "grow": 1,
+            "paddingTop": 24,
+            "items": [
+              {
+                "type": "Kaart",
+                "kop": "${payload.ds.weer ? payload.ds.weer.plaats : 'Weer'}",
+                "items": [
+                  {
+                    "type": "Container",
+                    "display": "${payload.ds.weer ? 'normal' : 'none'}",
+                    "items": [
+                      {
+                        "type": "Container",
+                        "direction": "row",
+                        "alignItems": "center",
+                        "items": [
+                          { "type": "Image", "source": "${payload.ds.weer.iconUrl}", "width": 120, "height": 120, "scale": "best-fit" },
+                          { "type": "Text", "text": "${payload.ds.weer.temperatuur}°", "fontSize": 120, "fontWeight": "700", "color": "@inkt", "paddingLeft": 16 }
+                        ]
+                      },
+                      { "type": "Text", "text": "${payload.ds.weer.beschrijving}", "fontSize": 28, "color": "@inkt2", "paddingTop": 8 },
+                      { "type": "Text", "text": "Wind ${payload.ds.weer.wind} · gevoel ${payload.ds.weer.gevoel}° · ${payload.ds.weer.luchtvochtigheid}%", "fontSize": 20, "color": "@inkt3", "paddingTop": 4 },
+                      {
+                        "type": "Container",
+                        "direction": "row",
+                        "paddingTop": 28,
+                        "data": "${payload.ds.weer.verwachting}",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "grow": 1,
+                            "items": [
+                              { "type": "Text", "text": "${data.dag}", "fontSize": 18, "color": "@inkt3" },
+                              { "type": "Text", "text": "${data.max}° / ${data.min}°", "fontSize": 24, "fontWeight": "700", "color": "@inkt" },
+                              { "type": "Text", "text": "${data.regenkans}% regen", "fontSize": 18, "color": "@inkt2" }
+                            ]
+                          }
+                        ]
+                      },
+                      { "type": "Text", "text": "Bron: ${payload.ds.weer.bron}", "fontSize": 16, "color": "@inkt3", "paddingTop": 20 }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "display": "${payload.ds.weer ? 'none' : 'normal'}",
+                    "text": "${payload.ds.fout ? payload.ds.fout : 'Geen weergegevens.'}",
+                    "fontSize": 22,
+                    "color": "@inkt2"
+                  }
+                ]
+              },
+              { "type": "Container", "width": 24 },
+              {
+                "type": "Kaart",
+                "kop": "Notities",
+                "items": [
+                  {
+                    "type": "Container",
+                    "display": "${payload.ds.aantalItems > 0 ? 'normal' : 'none'}",
+                    "data": "${payload.ds.items}",
+                    "items": [
+                      {
+                        "type": "Container",
+                        "paddingBottom": 14,
+                        "items": [
+                          { "type": "Text", "text": "${data.titel}", "fontSize": 26, "fontWeight": "600", "color": "@inkt", "maxLines": 2 },
+                          { "type": "Text", "text": "${data.sub}", "fontSize": 18, "color": "@inkt3", "display": "${data.sub ? 'normal' : 'none'}" }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "Text",
+                    "display": "${payload.ds.aantalItems > 0 ? 'none' : 'normal'}",
+                    "text": "Nog geen notities. Zet regels in lambda/notities.json en zeg: ververs.",
+                    "fontSize": 22,
+                    "color": "@inkt2"
+                  },
+                  { "type": "Container", "grow": 1 },
+                  {
+                    "type": "Text",
+                    "display": "${payload.ds.gebruikersId ? 'normal' : 'none'}",
+                    "text": "Gebruikers-id voor tools/push.mjs: ${payload.ds.gebruikersId}",
+                    "fontSize": 14,
+                    "color": "@inkt3",
+                    "maxLines": 3
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "type": "Container",
+            "direction": "row",
+            "paddingTop": 24,
+            "items": [
+              {
+                "type": "AlexaButton",
+                "buttonText": "Ververs",
+                "buttonStyle": "contained",
+                "primaryAction": [{ "type": "SendEvent", "arguments": ["refresh", "scherm"] }]
+              },
+              { "type": "Container", "width": 16 },
+              {
+                "type": "AlexaButton",
+                "display": "${payload.ds.web ? 'normal' : 'none'}",
+                "buttonText": "${payload.ds.web ? payload.ds.web.titel : ''}",
+                "buttonStyle": "contained",
+                "primaryAction": [{ "type": "OpenURL", "source": "${payload.ds.web.url}" }]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

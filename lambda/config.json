@@ -1,0 +1,11 @@
+{
+  "_uitleg": "Instellingen zonder geheimen. Geheimen (client id en secret van de skill) staan in credentials.json (gitignored) of in omgevingsvariabelen.",
+  "titel": "Thuis",
+  "buienradarStationId": 6344,
+  "_buienradarStationId": "Meetstation Rotterdam (stationid 6344 in https://data.buienradar.nl/2.0/feed/json). Kies een ander station: zoek in de feed op stationname.",
+  "webUrl": "",
+  "_webUrl": "Volledige URL van je eigen webdashboard (bijvoorbeeld Home Assistant). Leeg = de webtegel blijft verborgen.",
+  "webTitel": "Webdashboard",
+  "datastoreEndpoint": "https://api.eu.amazonalexa.com/v1/datastore/commands",
+  "_datastoreEndpoint": "EU-endpoint voor een skill in een Europese Amazon-regio; Noord-Amerika is https://api.amazonalexa.com/v1/datastore/commands."
+}

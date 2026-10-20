@@ -1,0 +1,57 @@
+{
+  "interactionModel": {
+    "languageModel": {
+      "invocationName": "mijn dashboard",
+      "intents": [
+        { "name": "AMAZON.CancelIntent", "samples": [] },
+        { "name": "AMAZON.HelpIntent", "samples": [] },
+        { "name": "AMAZON.StopIntent", "samples": [] },
+        { "name": "AMAZON.NavigateHomeIntent", "samples": [] },
+        { "name": "AMAZON.FallbackIntent", "samples": [] },
+        {
+          "name": "OpenDashboardIntent",
+          "slots": [],
+          "samples": [
+            "open het dashboard",
+            "toon het dashboard",
+            "laat het dashboard zien",
+            "toon mijn overzicht",
+            "laat mijn overzicht zien"
+          ]
+        },
+        {
+          "name": "OpenWebIntent",
+          "slots": [],
+          "samples": [
+            "open het webdashboard",
+            "open de webpagina",
+            "open de website",
+            "toon het webdashboard"
+          ]
+        },
+        {
+          "name": "RefreshIntent",
+          "slots": [],
+          "samples": [
+            "ververs",
+            "ververs de gegevens",
+            "haal nieuwe gegevens op",
+            "werk het dashboard bij",
+            "werk de widget bij"
+          ]
+        },
+        {
+          "name": "ShowUserIdIntent",
+          "slots": [],
+          "samples": [
+            "toon mijn gebruikers id",
+            "wat is mijn gebruikers id",
+            "geef mijn gebruikers id",
+            "toon de push id"
+          ]
+        }
+      ],
+      "types": []
+    }
+  }
+}
