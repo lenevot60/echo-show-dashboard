@@ -19,8 +19,8 @@
             "name": "Mijn dashboard",
             "description": "Weer, je notities en een tegel naar je eigen webdashboard. Gegevens van je eigen backend.",
             "keywords": ["dashboard", "weer", "notities"],
-            "iconUri": "https://VUL-IN.example.com/icon-450.png",
-            "previews": ["https://VUL-IN.example.com/preview-328x552.png"]
+            "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/icon-450.png",
+            "previews": ["https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/preview-328x552.png"]
           }
         }
       ],
@@ -31,8 +31,8 @@
             "name": "My dashboard",
             "description": "Weather, your notes and a tile to your own web dashboard. Data from your own backend.",
             "keywords": ["dashboard", "weather", "notes"],
-            "iconUri": "https://VUL-IN.example.com/icon-450.png",
-            "previews": ["https://VUL-IN.example.com/preview-328x552.png"]
+            "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/icon-450.png",
+            "previews": ["https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/preview-328x552.png"]
           }
         }
       ]

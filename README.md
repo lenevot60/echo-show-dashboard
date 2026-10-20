@@ -39,10 +39,8 @@ Alexa-skill met APL, en dat is dit project. Het plan met bronnen staat in `docs/
 Je hebt nodig: een Amazon-account dat op de Echo Show is ingelogd, een gratis Alexa-ontwikkelaarsaccount op
 developer.amazon.com met **hetzelfde** Amazon-account, en een openbare Git-URL van deze map.
 
-1. **Zet deze map op GitHub** (openbaar; de console importeert alleen vanaf een Git-URL). Pas daarna in
-   `skill-package/dataStorePackages/dashboard-widget/manifest.json` de twee URL's aan naar de raw-URL's van
-   `assets/icon-450.png` en `assets/preview-328x552.png`, bijvoorbeeld
-   `https://raw.githubusercontent.com/<gebruiker>/<repo>/main/assets/icon-450.png`.
+1. **Git-URL**: deze map staat openbaar op GitHub; de beeld-URL's in het widgetmanifest wijzen naar `assets/` in die
+   repository. Vervang je de beelden, dan blijven de URL's gelijk.
 2. **Developer Console** (developer.amazon.com/alexa/console/ask): Create Skill. Naam "Mijn dashboard", primaire
    taal **Dutch (NL)**, type Custom, hosting **Alexa-hosted (Node.js)**. Bij Templates kies je **Import skill** en
    plak je de Git-URL. Importeren duurt een paar minuten; de console maakt zelf de Lambda aan.
