@@ -52,6 +52,12 @@ Aanroep (21 oktober, 00:45): de simulator start de skill in het Engels ("open my
 maar niet in het Nederlands, ook niet met de nieuwe naam "mijn overzicht". Zet de Echo Show daarom op Engels (US of
 UK) zolang Nederlands voor eigen skills niet werkt; de inhoud van widget en scherm blijft Nederlands.
 
+Widget op het toestel (21 oktober, 01:15): de authoring tool meldt driemaal "Installation Simulated Successfully"
+(23:57, 01:04 en 01:12, de laatste met en-US in het pakketmanifest), maar de Data Store REST API antwoordt voor de
+twee apparaten met Data Store-ondersteuning "The device does not have any package from this skill". Het pakket staat
+dus nog niet op de Echo Show 11; oorzaak onbekend (taal van het toestel, slaapstand, of dev-widgets op Vega OS).
+Controleer op het toestel de Widget Gallery en de taalinstelling.
+
 Let op bij een import in de console: de aanroepnaam uit `interactionModels/custom/nl-NL.json` komt niet mee. Zet het
 model daarna via Build, Interaction Model, JSON Editor, dan Save en Build skill.
 
