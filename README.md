@@ -48,9 +48,11 @@ SUCCESSFUL, de spraak "Hier is je dashboard." en de directive `Alexa.Presentatio
 (antwoord "Ik weet niet zeker hoe ik je daarmee kan helpen"); het Nederlandse model was pas om 00:05 opnieuw gebouwd,
 nadat bleek dat de import de aanroepnaam op "change me" had gezet. Test het daarom op het toestel zelf.
 
-Aanroep (21 oktober, 00:45): de simulator start de skill in het Engels ("open my overview", "Here is your dashboard.")
-maar niet in het Nederlands, ook niet met de nieuwe naam "mijn overzicht". Zet de Echo Show daarom op Engels (US of
-UK) zolang Nederlands voor eigen skills niet werkt; de inhoud van widget en scherm blijft Nederlands.
+Aanroep (21 oktober): de simulator start de skill in het Engels ("open my overview", "Here is your dashboard.") maar
+niet in het Nederlands, met geen enkele naam ("mijn dashboard", "mijn overzicht", "thuis overzicht" zijn geprobeerd).
+De Echo Show 11 van de eigenaar staat op Nederlands en reageert net zo. Conclusie: Alexa start eigen (custom) skills in
+het Nederlands op dit moment niet, hoewel nl-NL als skilltaal in de console bestaat. Zet de Echo Show daarom op Engels
+(US of UK); de inhoud van widget en scherm blijft Nederlands, alleen de korte gesproken zinnen zijn dan Engels.
 
 Widget op het toestel (21 oktober, 01:15): de authoring tool meldt driemaal "Installation Simulated Successfully"
 (23:57, 01:04 en 01:12, de laatste met en-US in het pakketmanifest), maar de Data Store REST API antwoordt voor de
