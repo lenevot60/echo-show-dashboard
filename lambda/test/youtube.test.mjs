@@ -63,3 +63,30 @@ test('an API error carries its reason, and no key means no call', async () => {
   await assert.rejects(yt.populair({ key: 'K', fetchImpl }), /403 quotaExceeded/)
   await assert.rejects(yt.zoek('x', { key: '', fetchImpl }), /Geen YouTube-sleutel/)
 })
+
+test('subscriptions: the newest uploads of all subscribed channels first, read with the token', async () => {
+  const headers = []
+  const antwoorden = {
+    subscriptions: { items: [{ snippet: { resourceId: { channelId: 'UCaaa' } } }, { snippet: { resourceId: { channelId: 'UCbbb' } } }] },
+    'UUaaa': { items: [{ contentDetails: { videoId: 'a1', videoPublishedAt: '2026-10-20T10:00:00Z' } }] },
+    'UUbbb': { items: [{ contentDetails: { videoId: 'b1', videoPublishedAt: '2026-10-22T08:00:00Z' } }, { contentDetails: { videoId: 'b0', videoPublishedAt: '2026-10-01T08:00:00Z' } }] },
+  }
+  const fetchImpl = async (url, init) => {
+    headers.push(init && init.headers && init.headers.Authorization)
+    const u = new URL(url)
+    const sleutel = u.pathname.endsWith('/subscriptions') ? 'subscriptions' : u.searchParams.get('playlistId')
+    const body = u.pathname.endsWith('/videos') ? { items: u.searchParams.get('id').split(',').map((id) => video(id)) } : antwoorden[sleutel]
+    return { ok: true, status: 200, json: async () => body }
+  }
+  const l = await yt.mijn('@abonnementen', 'TOKEN', { fetchImpl })
+  assert.deepEqual(l.items.map((i) => i.id), ['b1', 'a1', 'b0'])
+  assert.ok(headers.every((h) => h === 'Bearer TOKEN'))
+})
+
+test('playlists become cards that open the playlist; an expired token keeps its status', async () => {
+  const { fetchImpl } = nep([{ items: [{ id: 'PL1', snippet: { title: 'Muziek &amp; meer', thumbnails: { medium: { url: 'https://i/p.jpg' } } }, contentDetails: { itemCount: 12 } }] }])
+  const l = await yt.mijn('@afspeellijsten', 'T', { fetchImpl })
+  assert.deepEqual(l.items[0], { soort: 'afspeellijst', id: 'PL1', titel: 'Muziek & meer', kanaal: '12 video’s', thumb: 'https://i/p.jpg', duur: '12' })
+  const { fetchImpl: f401 } = nep([{ status: 401, body: { error: { message: 'Invalid Credentials' } } }])
+  await assert.rejects(yt.mijn('@leuk', 'T', { fetchImpl: f401 }), (e) => e.status === 401)
+})

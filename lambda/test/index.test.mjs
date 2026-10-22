@@ -7,7 +7,7 @@ const { buildSkill } = require('../index.js')
 const stil = { log() {}, error() {} }
 const content = { titel: 'Thuis', bijgewerktTekst: '20:05', weer: null, items: [], aantalItems: 0, web: { url: 'https://voorbeeld.nl/dash', titel: 'Web' }, fout: null }
 
-function envelope(request, { apl = true, html = false, locale = 'nl-NL', attributes } = {}) {
+function envelope(request, { apl = true, html = false, locale = 'nl-NL', attributes, token } = {}) {
   const supportedInterfaces = { ...(apl ? { 'Alexa.Presentation.APL': {} } : {}), ...(html ? { 'Alexa.Presentation.HTML': {} } : {}) }
   return {
     version: '1.0',
@@ -15,7 +15,7 @@ function envelope(request, { apl = true, html = false, locale = 'nl-NL', attribu
     context: {
       System: {
         application: { applicationId: 'a' },
-        user: { userId: 'amzn1.ask.account.TEST' },
+        user: { userId: 'amzn1.ask.account.TEST', ...(token ? { accessToken: token } : {}) },
         device: { deviceId: 'amzn1.ask.device.D', supportedInterfaces },
         apiEndpoint: 'https://api.eu.amazonalexa.com',
       },
@@ -264,6 +264,7 @@ function metYouTube(extra = {}) {
       sleutel: () => 'SLEUTEL',
       populair: async (o) => { vragen.push(['populair', o.categorie]); return lijst },
       zoek: async (q) => { vragen.push(['zoek', q]); return { ...lijst, titel: `Resultaten voor “${q}”`, zoekterm: q } },
+      mijn: async (soort, token, o) => { vragen.push(['mijn', soort, token, o.afspeellijst && o.afspeellijst.id]); return { ...lijst, titel: soort, categorie: soort } },
       ...extra,
     },
   })
@@ -323,4 +324,35 @@ test('a failing YouTube call still opens the page, with the error in the list', 
   const d = htmlDirective(res, 'Alexa.Presentation.HTML.Start')
   assert.deepEqual(d.data.lijst.items, [])
   assert.match(d.data.lijst.fout, /quotaExceeded/)
+})
+
+test('with a linked account YouTube opens on the subscriptions, and the account chips come first', async () => {
+  const { skill, vragen } = metYouTube()
+  const res = await skill.invoke(envelope({ type: 'Alexa.Presentation.APL.UserEvent', arguments: ['openYouTube'] }, { html: true, token: 'TOKEN' }))
+  const d = htmlDirective(res, 'Alexa.Presentation.HTML.Start')
+  assert.equal(d.data.gekoppeld, true)
+  assert.equal(d.data.lijst.categorie, '@abonnementen')
+  assert.deepEqual(d.data.categorieen.slice(0, 4).map((c) => c.id), ['', '@abonnementen', '@leuk', '@afspeellijsten'])
+  assert.deepEqual(vragen, [['mijn', '@abonnementen', 'TOKEN', null]])
+})
+
+test('without a linked account an account chip explains how to link and puts a link card in the Alexa app', async () => {
+  const { skill, vragen } = metYouTube()
+  const res = await skill.invoke(envelope({ type: 'Alexa.Presentation.HTML.Message', message: { type: 'categorie', categorie: '@leuk' } }, { html: true, attributes: { youtube: true } }))
+  const m = htmlDirective(res, 'Alexa.Presentation.HTML.HandleMessage')
+  assert.match(m.message.lijst.melding, /Account koppelen/)
+  assert.equal(res.response.card.type, 'LinkAccount')
+  assert.deepEqual(vragen, [])
+})
+
+test('a playlist tapped on the page is read with the token; an expired link asks to link again', async () => {
+  const { skill, vragen } = metYouTube()
+  const bericht = { type: 'Alexa.Presentation.HTML.Message', message: { type: 'afspeellijst', id: 'PL1', titel: 'Muziek' } }
+  await skill.invoke(envelope(bericht, { html: true, attributes: { youtube: true }, token: 'TOKEN' }))
+  assert.deepEqual(vragen, [['mijn', '@afspeellijst', 'TOKEN', 'PL1']])
+  const verlopen = Object.assign(new Error('YouTube 401'), { status: 401 })
+  const { skill: s2 } = metYouTube({ mijn: async () => { throw verlopen } })
+  const res = await s2.invoke(envelope({ type: 'Alexa.Presentation.HTML.Message', message: { type: 'categorie', categorie: '@abonnementen' } }, { html: true, attributes: { youtube: true }, token: 'OUD' }))
+  assert.match(htmlDirective(res, 'Alexa.Presentation.HTML.HandleMessage').message.lijst.melding, /opnieuw/)
+  assert.equal(res.response.card.type, 'LinkAccount')
 })

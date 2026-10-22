@@ -25,6 +25,8 @@ const TEKST = {
     kaartTitel: 'Gebruikers-id voor tools/push.mjs',
     geenHtml: 'Dit toestel kan YouTube niet over het hele scherm openen vanuit een skill.',
     geenYouTube: 'YouTube is nog niet ingesteld. Zet youtubeKey in credentials punt json en youtubeUrl in config punt json.',
+    koppel: 'Koppel eerst je YouTube-account: open de Alexa-app, ga naar Vaardigheden, Mijn dashboard, en kies Account koppelen. Er staat een kaart klaar.',
+    opnieuwKoppelen: 'YouTube accepteert de koppeling niet meer. Koppel je account opnieuw in de Alexa-app.',
   },
   en: {
     hier: 'Here is your dashboard.',
@@ -40,6 +42,8 @@ const TEKST = {
     kaartTitel: 'User id for tools/push.mjs',
     geenHtml: 'This device cannot open YouTube full screen from a skill.',
     geenYouTube: 'YouTube is not set up yet. Put youtubeKey in credentials dot json and youtubeUrl in config dot json.',
+    koppel: 'Koppel eerst je YouTube-account: open de Alexa-app, ga naar Vaardigheden, Mijn dashboard, en kies Account koppelen. Er staat een kaart klaar.',
+    opnieuwKoppelen: 'YouTube accepteert de koppeling niet meer. Koppel je account opnieuw in de Alexa-app.',
   },
 };
 
@@ -99,7 +103,7 @@ function buildSkill(deps = {}) {
   const credentials = deps.credentials || bronnen.credentials;
   const logger = deps.logger || console;
   const nu = deps.nu || (() => new Date());
-  const youtubeDeps = { sleutel: youtube.sleutel, populair: youtube.populair, zoek: youtube.zoek, ...(deps.youtube || {}) };
+  const youtubeDeps = { sleutel: youtube.sleutel, populair: youtube.populair, zoek: youtube.zoek, mijn: youtube.mijn, ...(deps.youtube || {}) };
   const opslag = deps.opslag !== undefined ? deps.opslag : gistOpslag({ ...bronnen.macBron(), fetchImpl: bronnen.fetchImplStandaard });
 
   /** Fields only the Mac knows; the Mac puts them, encrypted, in a secret gist (see opslag.js). */
@@ -189,7 +193,7 @@ function buildSkill(deps = {}) {
    * screen in this session, send it the new list. The ASK SDK has no types for Alexa.Presentation.HTML, so the
    * directives are plain objects.
    */
-  async function toonYouTube(h, { zoekterm = '', categorie = '' } = {}) {
+  async function toonYouTube(h, { zoekterm = '', categorie = '', afspeellijst = null } = {}) {
     const s = t(h);
     const url = bronnen.config().youtubeUrl;
     if (!heeftHtml(h)) {
@@ -197,14 +201,29 @@ function buildSkill(deps = {}) {
       return h.responseBuilder.speak(s.geenHtml).getResponse();
     }
     if (!url || !youtubeDeps.sleutel()) return h.responseBuilder.speak(s.geenYouTube).getResponse();
+    // Linked Google account (Alexa account linking): opening YouTube starts with the subscriptions.
+    const token = h.requestEnvelope.context.System.user.accessToken || '';
+    const sessie = h.attributesManager.getSessionAttributes();
+    if (!zoekterm && !categorie && !afspeellijst && token && !sessie.youtube) categorie = '@abonnementen';
+    const account = afspeellijst ? '@afspeellijst' : categorie.startsWith('@') ? categorie : '';
     let lijst;
+    let koppelkaart = false;
     try {
-      lijst = zoekterm ? await youtubeDeps.zoek(zoekterm) : await youtubeDeps.populair({ categorie });
+      if (account && !token) {
+        lijst = { titel: 'Je eigen account', categorie, items: [], melding: s.koppel };
+        koppelkaart = true;
+      } else if (account) {
+        lijst = await youtubeDeps.mijn(account, token, { afspeellijst });
+      } else {
+        lijst = zoekterm ? await youtubeDeps.zoek(zoekterm) : await youtubeDeps.populair({ categorie });
+      }
     } catch (e) {
       logger.error('YouTube-lijst niet opgehaald', e);
-      lijst = { titel: 'YouTube', items: [], fout: String(e && e.message ? e.message : e) };
+      const verlopen = account && e && (e.status === 401 || e.status === 403);
+      lijst = { titel: 'YouTube', categorie, items: [], fout: String(e && e.message ? e.message : e), ...(verlopen ? { melding: s.opnieuwKoppelen } : {}) };
+      koppelkaart = Boolean(verlopen);
     }
-    const sessie = h.attributesManager.getSessionAttributes();
+    if (koppelkaart) h.responseBuilder.withLinkAccountCard();
     logger.log('YouTube', sessie.youtube ? 'lijst naar de pagina' : 'start webapp', JSON.stringify({ zoekterm, categorie, items: (lijst.items || []).length, fout: lijst.fout || null }));
     if (sessie.youtube) {
       return h.responseBuilder.addDirective({ type: 'Alexa.Presentation.HTML.HandleMessage', message: { type: 'lijst', lijst } }).getResponse();
@@ -214,7 +233,7 @@ function buildSkill(deps = {}) {
     return h.responseBuilder
       .addDirective({
         type: 'Alexa.Presentation.HTML.Start',
-        data: { lijst, categorieen: youtube.CATEGORIEEN },
+        data: { lijst, categorieen: [youtube.CATEGORIEEN[0], ...youtube.ACCOUNT, ...youtube.CATEGORIEEN.slice(1)], gekoppeld: Boolean(token) },
         request: { uri: url, method: 'GET' },
         configuration: { timeoutInSeconds: 300 },
       })
@@ -239,6 +258,7 @@ function buildSkill(deps = {}) {
       logger.log('Bericht van YouTube', JSON.stringify(m));
       if (m.type === 'zoek') return toonYouTube(h, { zoekterm: m.zoekterm || '' });
       if (m.type === 'categorie') return toonYouTube(h, { categorie: m.categorie || '' });
+      if (m.type === 'afspeellijst') return toonYouTube(h, { afspeellijst: { id: String(m.id || ''), titel: String(m.titel || '') } });
       return h.responseBuilder.getResponse();
     },
   };
