@@ -55,11 +55,16 @@ test('verzamel returns the weather when the feed answers', async () => {
   const id = bronnen.config().buienradarStationId
   const metStation = { ...feed, actual: { stationmeasurements: [{ ...feed.actual.stationmeasurements[0], stationid: id }] } }
   const fetchImpl = async (url) => (String(url).includes('raintext') ? { ok: true, text: async () => '000|11:35\n000|11:40\n' } : { ok: true, json: async () => metStation })
-  const content = await bronnen.verzamel({ fetchImpl })
+  const nu = new Date('2026-10-22T06:10:00Z')
+  const content = await bronnen.verzamel({ fetchImpl, nu })
   assert.equal(content.fout, null)
   assert.equal(content.weer.beschrijving, 'Zwaar bewolkt')
   assert.equal(content.regen.samenvatting, 'Droog komende 2 uur')
   assert.ok(content.titel)
+  // The full screen compares ts with the data store copy and shows the date in Dutch, Amsterdam time.
+  assert.equal(content.ts, nu.getTime())
+  assert.equal(content.datumTekst, 'donderdag 22 oktober')
+  assert.equal(content.bijgewerktTekst, '08:10')
 })
 
 test('pushNaarDataStore gets a token with the datastore scope and sends one PUT_OBJECT to the target', async () => {

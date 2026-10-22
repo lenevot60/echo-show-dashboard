@@ -1,44 +1,31 @@
 {
   "type": "APL",
   "version": "2024.3",
-  "description": "Full-screen dashboard for the Echo Show (landscape hub). Datasource ds is the same object the widget reads from the data store, plus blijf (keep the screen up), openWeb and gebruikersId. While blijf is true the screen sends a ping every 25 s; tick handlers run in fast mode, so the SendEvent runs on its own sequencer.",
-  "import": [{ "name": "alexa-layouts", "version": "1.7.0" }],
-  "settings": { "idleTimeout": 120000 },
+  "description": "Full-screen dashboard for the Echo Show (landscape hub), laid out like the approved example: a square with the route to work on the left, weather, today and the Claude sessions on the right. Data comes from the device data store (md, filled from the Mac) when it is at most 30 minutes older than what the skill sent itself (payload.ds: weather and rain only); otherwise from payload.ds. blijf, openWeb and gebruikersId always come from payload.ds. While blijf is true the screen sends a ping every 25 s; tick handlers run in fast mode, so the SendEvent runs on its own sequencer.",
+  "extensions": [{ "name": "DataStore", "uri": "alexaext:datastore:10" }],
+  "settings": {
+    "idleTimeout": 120000,
+    "DataStore": {
+      "dataBindings": [{ "namespace": "dashboard", "key": "overzicht", "dataBindingName": "md", "dataType": "OBJECT" }]
+    }
+  },
   "resources": [
     {
       "colors": {
-        "vlak": "#0F1115",
-        "kaart": "#1A1D24",
+        "vlak": "#0E1116",
+        "kaart": "#181C23",
+        "lijn": "#262C36",
         "inkt": "#FFFFFF",
-        "inkt2": "#C9CDD6",
-        "inkt3": "#8A90A0",
-        "accent": "#F2B705"
+        "inkt2": "#C5CBD6",
+        "inkt3": "#8A91A0",
+        "accent": "#FFC531",
+        "ok": "#4ED39A",
+        "vraag": "#FF8A3D",
+        "regen": "#4C8DD6",
+        "afdek": "#0E1116E6"
       }
     }
   ],
-  "layouts": {
-    "Kaart": {
-      "parameters": [{ "name": "kop", "type": "string" }],
-      "items": [
-        {
-          "type": "Frame",
-          "backgroundColor": "@kaart",
-          "borderRadius": 24,
-          "grow": 1,
-          "shrink": 1,
-          "item": {
-            "type": "Container",
-            "padding": 28,
-            "height": "100%",
-            "items": [
-              { "type": "Text", "text": "${kop}", "fontSize": 20, "fontWeight": "700", "color": "@inkt3", "paddingBottom": 12 },
-              { "type": "Container", "grow": 1, "items": "${children}" }
-            ]
-          }
-        }
-      ]
-    }
-  },
   "mainTemplate": {
     "parameters": ["payload"],
     "items": [
@@ -47,10 +34,14 @@
         "width": "100vw",
         "height": "100vh",
         "backgroundColor": "@vlak",
-        "paddingLeft": 48,
-        "paddingRight": 48,
-        "paddingTop": 36,
-        "paddingBottom": 28,
+        "paddingLeft": 40,
+        "paddingRight": 40,
+        "paddingTop": 26,
+        "paddingBottom": 26,
+        "bind": [
+          { "name": "d", "value": "${md && md.ts && md.ts > payload.ds.ts - 1800000 ? md : payload.ds}" },
+          { "name": "zijde", "value": "${Math.min(viewport.height - 128, viewport.width * 0.5)}" }
+        ],
         "onMount": [
           { "type": "OpenURL", "when": "${payload.ds.openWeb == true && payload.ds.web != null}", "source": "${payload.ds.web.url}" }
         ],
@@ -67,133 +58,380 @@
           {
             "type": "Container",
             "direction": "row",
-            "alignItems": "baseline",
+            "alignItems": "center",
+            "height": 62,
             "items": [
-              { "type": "Text", "text": "${payload.ds.titel}", "fontSize": 44, "fontWeight": "700", "color": "@inkt", "grow": 1 },
-              { "type": "Text", "text": "Bijgewerkt ${payload.ds.bijgewerktTekst}", "fontSize": 20, "color": "@inkt3" }
-            ]
-          },
-          {
-            "type": "Container",
-            "direction": "row",
-            "grow": 1,
-            "paddingTop": 24,
-            "items": [
+              { "type": "Text", "text": "${Time.format('HH:mm', localTime)}", "fontSize": 52, "fontWeight": "700", "color": "@inkt" },
+              { "type": "Text", "text": "${d.datumTekst}", "fontSize": 24, "color": "@inkt2", "paddingLeft": 18, "grow": 1, "shrink": 1, "maxLines": 1 },
               {
-                "type": "Kaart",
-                "kop": "${payload.ds.weer ? payload.ds.weer.plaats : 'Weer'}",
-                "items": [
-                  {
-                    "type": "Container",
-                    "display": "${payload.ds.weer ? 'normal' : 'none'}",
-                    "items": [
-                      {
-                        "type": "Container",
-                        "direction": "row",
-                        "alignItems": "center",
-                        "items": [
-                          { "type": "Image", "source": "${payload.ds.weer.iconUrl}", "width": 120, "height": 120, "scale": "best-fit" },
-                          { "type": "Text", "text": "${payload.ds.weer.temperatuur}°", "fontSize": 120, "fontWeight": "700", "color": "@inkt", "paddingLeft": 16 },
-                          {
-                            "type": "Container",
-                            "paddingLeft": 32,
-                            "shrink": 1,
-                            "items": [
-                              { "type": "Text", "text": "${payload.ds.weer.beschrijving}", "fontSize": 28, "color": "@inkt2" },
-                              { "type": "Text", "text": "Wind ${payload.ds.weer.wind} · gevoel ${payload.ds.weer.gevoel}° · ${payload.ds.weer.luchtvochtigheid}%", "fontSize": 20, "color": "@inkt3", "paddingTop": 4 }
-                            ]
-                          }
-                        ]
-                      },
-                      {
-                        "type": "Container",
-                        "direction": "row",
-                        "paddingTop": 28,
-                        "data": "${payload.ds.weer.verwachting}",
-                        "items": [
-                          {
-                            "type": "Container",
-                            "grow": 1,
-                            "items": [
-                              { "type": "Text", "text": "${data.dag}", "fontSize": 18, "color": "@inkt3" },
-                              { "type": "Text", "text": "${data.max}° / ${data.min}°", "fontSize": 24, "fontWeight": "700", "color": "@inkt" },
-                              { "type": "Text", "text": "${data.regenkans}% regen", "fontSize": 18, "color": "@inkt2" }
-                            ]
-                          }
-                        ]
-                      },
-                      { "type": "Text", "text": "Bron: ${payload.ds.weer.bron}", "fontSize": 16, "color": "@inkt3", "paddingTop": 20 }
-                    ]
-                  },
-                  {
-                    "type": "Text",
-                    "display": "${payload.ds.weer ? 'none' : 'normal'}",
-                    "text": "${payload.ds.fout ? payload.ds.fout : 'Geen weergegevens.'}",
-                    "fontSize": 22,
-                    "color": "@inkt2"
-                  }
-                ]
-              },
-              {
-                "type": "Container",
-                "direction": "row",
-                "display": "${payload.ds.aantalItems > 0 ? 'normal' : 'none'}",
-                "width": "40%",
-                "items": [
-                  { "type": "Container", "width": 24 },
-                  {
-                    "type": "Kaart",
-                    "kop": "Notities",
-                    "items": [
-                      {
-                        "type": "Container",
-                        "data": "${payload.ds.items}",
-                        "items": [
-                          {
-                            "type": "Container",
-                            "paddingBottom": 14,
-                            "items": [
-                              { "type": "Text", "text": "${data.titel}", "fontSize": 26, "fontWeight": "600", "color": "@inkt", "maxLines": 2 },
-                              { "type": "Text", "text": "${data.sub}", "fontSize": 18, "color": "@inkt3", "display": "${data.sub ? 'normal' : 'none'}" }
-                            ]
-                          }
-                        ]
-                      }
-                    ]
-                  }
-                ]
+                "type": "TouchWrapper",
+                "accessibilityLabel": "Ververs",
+                "onPress": [{ "type": "SendEvent", "arguments": ["refresh", "scherm"] }],
+                "item": {
+                  "type": "Container",
+                  "alignItems": "end",
+                  "items": [
+                    { "type": "Text", "text": "Bijgewerkt ${d.bijgewerktTekst} · tik om te verversen", "fontSize": 17, "color": "@inkt3", "maxLines": 1 },
+                    {
+                      "type": "Text",
+                      "display": "${payload.ds.gebruikersId ? 'normal' : 'none'}",
+                      "text": "Gebruikers-id: ${payload.ds.gebruikersId}",
+                      "fontSize": 12,
+                      "color": "@inkt3",
+                      "maxLines": 2
+                    }
+                  ]
+                }
               }
             ]
           },
           {
             "type": "Container",
             "direction": "row",
-            "alignItems": "center",
-            "paddingTop": 24,
+            "paddingTop": 18,
             "items": [
               {
-                "type": "AlexaButton",
-                "buttonText": "Ververs",
-                "buttonStyle": "contained",
-                "primaryAction": [{ "type": "SendEvent", "arguments": ["refresh", "scherm"] }]
+                "type": "Frame",
+                "width": "${zijde}",
+                "height": "${zijde}",
+                "backgroundColor": "@kaart",
+                "borderRadius": 24,
+                "item": {
+                  "type": "Container",
+                  "width": "100%",
+                  "height": "100%",
+                  "items": [
+                    {
+                      "type": "Image",
+                      "display": "${d.route && d.route.kaartUrl ? 'normal' : 'none'}",
+                      "position": "absolute",
+                      "top": 0,
+                      "left": 0,
+                      "width": "${zijde}",
+                      "height": "${zijde}",
+                      "borderRadius": 24,
+                      "scale": "best-fill",
+                      "source": "${d.route.kaartUrl}"
+                    },
+                    {
+                      "type": "Container",
+                      "display": "${d.route ? 'none' : 'normal'}",
+                      "position": "absolute",
+                      "top": 0,
+                      "left": 0,
+                      "width": "${zijde}",
+                      "height": "${zijde}",
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "paddingLeft": 40,
+                      "paddingRight": 40,
+                      "items": [
+                        { "type": "Text", "text": "Nog geen reistijd", "fontSize": 30, "fontWeight": "700", "color": "@inkt2", "textAlign": "center" },
+                        { "type": "Text", "text": "De route verschijnt zodra de Mac hem heeft opgehaald.", "fontSize": 18, "color": "@inkt3", "textAlign": "center", "paddingTop": 8 }
+                      ]
+                    },
+                    {
+                      "type": "Frame",
+                      "position": "absolute",
+                      "top": 18,
+                      "left": 18,
+                      "backgroundColor": "@afdek",
+                      "borderRadius": 10,
+                      "paddingLeft": 12,
+                      "paddingRight": 12,
+                      "paddingTop": 6,
+                      "paddingBottom": 6,
+                      "item": { "type": "Text", "text": "NAAR WERK", "fontSize": 16, "fontWeight": "700", "color": "@inkt3", "letterSpacing": 1 }
+                    },
+                    {
+                      "type": "Frame",
+                      "display": "${d.route ? 'normal' : 'none'}",
+                      "position": "absolute",
+                      "left": 18,
+                      "right": 18,
+                      "bottom": 18,
+                      "backgroundColor": "@afdek",
+                      "borderRadius": 18,
+                      "paddingLeft": 20,
+                      "paddingRight": 20,
+                      "paddingTop": 14,
+                      "paddingBottom": 14,
+                      "item": {
+                        "type": "Container",
+                        "items": [
+                          {
+                            "type": "Container",
+                            "direction": "row",
+                            "alignItems": "center",
+                            "items": [
+                              { "type": "Text", "text": "${d.route.minuten}", "fontSize": 68, "fontWeight": "800", "color": "@inkt" },
+                              { "type": "Text", "text": "min", "fontSize": 24, "fontWeight": "700", "color": "@inkt", "paddingLeft": 4, "paddingTop": 18 },
+                              {
+                                "type": "Container",
+                                "paddingLeft": 20,
+                                "grow": 1,
+                                "shrink": 1,
+                                "items": [
+                                  { "type": "Text", "text": "${d.route.via ? 'via ' + d.route.via : 'naar ' + d.route.naar}", "fontSize": 22, "fontWeight": "700", "color": "@inkt", "maxLines": 1 },
+                                  {
+                                    "type": "Text",
+                                    "text": "${d.route.vertraging > 0 ? '+' + d.route.vertraging + ' min file' : 'geen file'} · aankomst ${Time.format('HH:mm', localTime + d.route.minuten * 60000)}",
+                                    "fontSize": 18,
+                                    "color": "${d.route.vertraging > 0 ? '@accent' : '@inkt2'}",
+                                    "maxLines": 1
+                                  }
+                                ]
+                              }
+                            ]
+                          },
+                          {
+                            "type": "Text",
+                            "display": "${d.vertrek ? 'normal' : 'none'}",
+                            "text": "${d.vertrek.tekst}",
+                            "fontSize": 18,
+                            "fontWeight": "700",
+                            "color": "${d.vertrek.teLaat ? '@vraag' : '@accent'}",
+                            "paddingTop": 6,
+                            "maxLines": 1
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
               },
-              { "type": "Container", "width": 16 },
+              { "type": "Container", "width": 22 },
               {
-                "type": "AlexaButton",
-                "display": "${payload.ds.web ? 'normal' : 'none'}",
-                "buttonText": "${payload.ds.web ? payload.ds.web.titel : ''}",
-                "buttonStyle": "contained",
-                "primaryAction": [{ "type": "OpenURL", "source": "${payload.ds.web.url}" }]
-              },
-              { "type": "Container", "grow": 1 },
-              {
-                "type": "Text",
-                "display": "${payload.ds.gebruikersId ? 'normal' : 'none'}",
-                "text": "Gebruikers-id: ${payload.ds.gebruikersId}",
-                "fontSize": 14,
-                "color": "@inkt3",
-                "maxLines": 2,
-                "shrink": 1
+                "type": "Container",
+                "grow": 1,
+                "shrink": 1,
+                "height": "${zijde}",
+                "items": [
+                  {
+                    "type": "Frame",
+                    "backgroundColor": "@kaart",
+                    "borderRadius": 22,
+                    "item": {
+                      "type": "Container",
+                      "paddingLeft": 22,
+                      "paddingRight": 22,
+                      "paddingTop": 16,
+                      "paddingBottom": 14,
+                      "items": [
+                        { "type": "Text", "text": "${d.plekNaam ? d.plekNaam : 'Weer'}", "fontSize": 15, "fontWeight": "700", "color": "@inkt3", "letterSpacing": 1 },
+                        {
+                          "type": "Text",
+                          "display": "${d.weer ? 'none' : 'normal'}",
+                          "text": "${d.fout ? d.fout : 'Geen weergegevens.'}",
+                          "fontSize": 18,
+                          "color": "@inkt2",
+                          "paddingTop": 6
+                        },
+                        {
+                          "type": "Container",
+                          "display": "${d.weer ? 'normal' : 'none'}",
+                          "direction": "row",
+                          "alignItems": "center",
+                          "paddingTop": 4,
+                          "items": [
+                            { "type": "Image", "source": "${d.weer.iconUrl}", "width": 60, "height": 60, "scale": "best-fit" },
+                            { "type": "Text", "text": "${d.weer.temperatuur}°", "fontSize": 56, "fontWeight": "700", "color": "@inkt", "paddingLeft": 10 },
+                            {
+                              "type": "Container",
+                              "paddingLeft": 16,
+                              "grow": 1,
+                              "shrink": 1,
+                              "items": [
+                                { "type": "Text", "text": "${d.weer.beschrijving}", "fontSize": 20, "color": "@inkt2", "maxLines": 1 },
+                                { "type": "Text", "text": "${d.regen ? d.regen.samenvatting : 'gemeten in ' + d.weer.plaats}", "fontSize": 16, "color": "@inkt3", "maxLines": 1 }
+                              ]
+                            },
+                            {
+                              "type": "Container",
+                              "direction": "row",
+                              "data": "${d.weer.verwachting}",
+                              "items": [
+                                {
+                                  "type": "Container",
+                                  "alignItems": "center",
+                                  "paddingLeft": 14,
+                                  "items": [
+                                    { "type": "Text", "text": "${data.dag}", "fontSize": 15, "color": "@inkt3" },
+                                    { "type": "Text", "text": "${data.max}°", "fontSize": 20, "fontWeight": "700", "color": "@inkt" }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Container",
+                          "display": "${d.regen ? 'normal' : 'none'}",
+                          "direction": "row",
+                          "alignItems": "end",
+                          "height": 22,
+                          "paddingTop": 6,
+                          "data": "${d.regen.balken}",
+                          "items": [
+                            {
+                              "type": "Frame",
+                              "grow": 1,
+                              "height": "${data > 0 ? Math.max(2, data * 0.16) : 1}",
+                              "backgroundColor": "${data > 0 ? '@regen' : '@lijn'}",
+                              "marginLeft": 1,
+                              "marginRight": 1
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  { "type": "Container", "height": 16 },
+                  {
+                    "type": "Frame",
+                    "grow": 1,
+                    "shrink": 1,
+                    "backgroundColor": "@kaart",
+                    "borderRadius": 22,
+                    "item": {
+                      "type": "Container",
+                      "height": "100%",
+                      "paddingLeft": 22,
+                      "paddingRight": 22,
+                      "paddingTop": 16,
+                      "paddingBottom": 12,
+                      "items": [
+                        { "type": "Text", "text": "VANDAAG", "fontSize": 15, "fontWeight": "700", "color": "@inkt3", "letterSpacing": 1 },
+                        {
+                          "type": "Text",
+                          "display": "${d.aantalAgenda > 0 || d.aantalTaken > 0 ? 'none' : 'normal'}",
+                          "text": "Geen afspraken of taken.",
+                          "fontSize": 18,
+                          "color": "@inkt2",
+                          "paddingTop": 8
+                        },
+                        {
+                          "type": "Container",
+                          "data": "${d.agenda}",
+                          "items": [
+                            {
+                              "type": "Container",
+                              "display": "${index < 4 ? 'normal' : 'none'}",
+                              "direction": "row",
+                              "alignItems": "center",
+                              "paddingTop": 7,
+                              "paddingBottom": 7,
+                              "items": [
+                                { "type": "Text", "text": "${data.tijd}", "width": 118, "fontSize": 19, "fontWeight": "700", "color": "${data.soort == 'afval' ? '@ok' : '@inkt'}", "maxLines": 1 },
+                                {
+                                  "type": "Container",
+                                  "grow": 1,
+                                  "shrink": 1,
+                                  "items": [
+                                    { "type": "Text", "text": "${data.titel}", "fontSize": 19, "color": "${data.soort == 'afval' ? '@ok' : '@inkt'}", "maxLines": 1 },
+                                    { "type": "Text", "display": "${data.plek ? 'normal' : 'none'}", "text": "${data.plek}", "fontSize": 14, "color": "@inkt3", "maxLines": 1 }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "display": "${d.aantalTaken > 0 ? 'normal' : 'none'}",
+                          "text": "TAKEN${d.aantalTaken > 1 ? ' · ' + d.aantalTaken + ' open' : ''}",
+                          "fontSize": 13,
+                          "fontWeight": "700",
+                          "color": "@inkt3",
+                          "letterSpacing": 1,
+                          "paddingTop": 8
+                        },
+                        {
+                          "type": "Container",
+                          "data": "${d.taken}",
+                          "items": [
+                            {
+                              "type": "Container",
+                              "display": "${index < Math.max(1, 5 - (d.aantalAgenda ? Math.min(d.aantalAgenda, 4) : 0)) ? 'normal' : 'none'}",
+                              "direction": "row",
+                              "alignItems": "center",
+                              "paddingTop": 5,
+                              "paddingBottom": 5,
+                              "items": [
+                                { "type": "Text", "text": "${data.wanneer}", "width": 118, "fontSize": 16, "color": "${data.wanneer == 'te laat' ? '@vraag' : '@inkt3'}", "maxLines": 1 },
+                                { "type": "Text", "text": "${data.titel}", "grow": 1, "shrink": 1, "fontSize": 18, "color": "@inkt", "maxLines": 1 }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  { "type": "Container", "height": 16 },
+                  {
+                    "type": "Frame",
+                    "backgroundColor": "@kaart",
+                    "borderRadius": 22,
+                    "item": {
+                      "type": "Container",
+                      "paddingLeft": 22,
+                      "paddingRight": 22,
+                      "paddingTop": 16,
+                      "paddingBottom": 12,
+                      "items": [
+                        {
+                          "type": "Container",
+                          "direction": "row",
+                          "alignItems": "center",
+                          "items": [
+                            { "type": "Text", "text": "CLAUDE-CHATS", "fontSize": 15, "fontWeight": "700", "color": "@inkt3", "letterSpacing": 1, "grow": 1 },
+                            {
+                              "type": "Text",
+                              "display": "${d.claude ? 'normal' : 'none'}",
+                              "text": "${d.claude.vragen > 0 ? d.claude.vragen + ' wacht op antwoord · ' : ''}${d.claude.bezig} bezig · ${d.claude.wacht} wacht",
+                              "fontSize": 16,
+                              "color": "${d.claude.vragen > 0 ? '@vraag' : '@inkt2'}",
+                              "maxLines": 1
+                            }
+                          ]
+                        },
+                        {
+                          "type": "Text",
+                          "display": "${d.claude ? 'none' : 'normal'}",
+                          "text": "Alleen zichtbaar als de Mac aanstaat.",
+                          "fontSize": 17,
+                          "color": "@inkt3",
+                          "paddingTop": 8
+                        },
+                        {
+                          "type": "Container",
+                          "data": "${d.claude.lijst}",
+                          "items": [
+                            {
+                              "type": "Container",
+                              "display": "${index < 3 ? 'normal' : 'none'}",
+                              "direction": "row",
+                              "alignItems": "center",
+                              "paddingTop": 6,
+                              "paddingBottom": 6,
+                              "items": [
+                                {
+                                  "type": "Frame",
+                                  "width": 12,
+                                  "height": 12,
+                                  "borderRadius": 6,
+                                  "backgroundColor": "${data.soort == 'vraag' ? '@vraag' : data.soort == 'bezig' ? '@accent' : '@ok'}"
+                                },
+                                { "type": "Text", "text": "${data.titel}", "grow": 1, "shrink": 1, "fontSize": 18, "color": "@inkt", "paddingLeft": 12, "maxLines": 1 },
+                                { "type": "Text", "text": "${data.label} · ${data.sinds}", "fontSize": 15, "color": "${data.soort == 'vraag' ? '@vraag' : '@inkt3'}", "paddingLeft": 12, "maxLines": 1 }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
               }
             ]
           }

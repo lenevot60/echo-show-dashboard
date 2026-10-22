@@ -82,6 +82,15 @@ function formatTijd(datum) {
   }).format(datum);
 }
 
+function formatDatum(datum) {
+  return new Intl.DateTimeFormat('nl-NL', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    timeZone: 'Europe/Amsterdam',
+  }).format(datum);
+}
+
 function rond(n) {
   return typeof n === 'number' && Number.isFinite(n) ? Math.round(n) : null;
 }
@@ -180,9 +189,12 @@ async function verzamel({ fetchImpl = fetchImplStandaard, nu = new Date() } = {}
   const items = notities();
   return {
     titel: c.titel || 'Dashboard',
+    plekNaam: c.plekNaam || null,
     regen,
     bijgewerkt: nu.toISOString(),
     bijgewerktTekst: formatTijd(nu),
+    datumTekst: formatDatum(nu),
+    ts: nu.getTime(),
     weer,
     items,
     aantalItems: items.length,

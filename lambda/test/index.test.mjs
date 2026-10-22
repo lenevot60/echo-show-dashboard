@@ -184,3 +184,14 @@ test('the dashboard document pings on its own sequencer and asks for a longer id
   assert.equal(tick.commands[0].arguments[0], 'blijf')
   assert.equal(doc.onMount, undefined)
 })
+
+test('the full screen reads the data store as md and falls back to what the skill sent', () => {
+  const fs = require('node:fs')
+  const path = require('node:path')
+  const { fileURLToPath } = require('node:url')
+  const doc = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apl', 'dashboard.json'), 'utf8'))
+  assert.equal(doc.extensions[0].uri, 'alexaext:datastore:10')
+  assert.deepEqual(doc.settings.DataStore.dataBindings[0], { namespace: 'dashboard', key: 'overzicht', dataBindingName: 'md', dataType: 'OBJECT' })
+  const d = doc.mainTemplate.items[0].bind.find((b) => b.name === 'd')
+  assert.match(d.value, /md\.ts > payload\.ds\.ts - 1800000 \? md : payload\.ds/)
+})
