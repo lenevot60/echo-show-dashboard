@@ -103,7 +103,7 @@ function buildSkill(deps = {}) {
   const credentials = deps.credentials || bronnen.credentials;
   const logger = deps.logger || console;
   const nu = deps.nu || (() => new Date());
-  const youtubeDeps = { sleutel: youtube.sleutel, populair: youtube.populair, zoek: youtube.zoek, mijn: youtube.mijn, ...(deps.youtube || {}) };
+  const youtubeDeps = { sleutel: youtube.sleutel, populair: youtube.populair, zoek: youtube.zoek, mijn: youtube.mijn, kanaal: youtube.kanaal, ...(deps.youtube || {}) };
   const opslag = deps.opslag !== undefined ? deps.opslag : gistOpslag({ ...bronnen.macBron(), fetchImpl: bronnen.fetchImplStandaard });
 
   /** Fields only the Mac knows; the Mac puts them, encrypted, in a secret gist (see opslag.js). */
@@ -193,7 +193,7 @@ function buildSkill(deps = {}) {
    * screen in this session, send it the new list. The ASK SDK has no types for Alexa.Presentation.HTML, so the
    * directives are plain objects.
    */
-  async function toonYouTube(h, { zoekterm = '', categorie = '', afspeellijst = null } = {}) {
+  async function toonYouTube(h, { zoekterm = '', categorie = '', afspeellijst = null, verzoek = null } = {}) {
     const s = t(h);
     const url = bronnen.config().youtubeUrl;
     if (!heeftHtml(h)) {
@@ -201,10 +201,9 @@ function buildSkill(deps = {}) {
       return h.responseBuilder.speak(s.geenHtml).getResponse();
     }
     if (!url || !youtubeDeps.sleutel()) return h.responseBuilder.speak(s.geenYouTube).getResponse();
-    // Linked Google account (Alexa account linking): opening YouTube starts with the subscriptions.
+    // Linked Google account (Alexa account linking): the account chips read the user's own YouTube.
     const token = h.requestEnvelope.context.System.user.accessToken || '';
     const sessie = h.attributesManager.getSessionAttributes();
-    if (!zoekterm && !categorie && !afspeellijst && token && !sessie.youtube) categorie = '@abonnementen';
     const account = afspeellijst ? '@afspeellijst' : categorie.startsWith('@') ? categorie : '';
     let lijst;
     let koppelkaart = false;
@@ -224,16 +223,17 @@ function buildSkill(deps = {}) {
       koppelkaart = Boolean(verlopen);
     }
     if (koppelkaart) h.responseBuilder.withLinkAccountCard();
+    lijst = youtube.beperk(lijst);
     logger.log('YouTube', sessie.youtube ? 'lijst naar de pagina' : 'start webapp', JSON.stringify({ zoekterm, categorie, items: (lijst.items || []).length, fout: lijst.fout || null }));
     if (sessie.youtube) {
-      return h.responseBuilder.addDirective({ type: 'Alexa.Presentation.HTML.HandleMessage', message: { type: 'lijst', lijst } }).getResponse();
+      return h.responseBuilder.addDirective({ type: 'Alexa.Presentation.HTML.HandleMessage', message: { type: 'lijst', lijst, verzoek } }).getResponse();
     }
     sessie.youtube = true;
     h.attributesManager.setSessionAttributes(sessie);
     return h.responseBuilder
       .addDirective({
         type: 'Alexa.Presentation.HTML.Start',
-        data: { lijst, categorieen: [youtube.CATEGORIEEN[0], ...youtube.ACCOUNT, ...youtube.CATEGORIEEN.slice(1)], gekoppeld: Boolean(token) },
+        data: { lijst, categorieen: youtube.CATEGORIEEN, gekoppeld: Boolean(token) },
         request: { uri: url, method: 'GET' },
         configuration: { timeoutInSeconds: 300 },
       })
@@ -256,9 +256,22 @@ function buildSkill(deps = {}) {
     async handle(h) {
       const m = h.requestEnvelope.request.message || {};
       logger.log('Bericht van YouTube', JSON.stringify(m));
-      if (m.type === 'zoek') return toonYouTube(h, { zoekterm: m.zoekterm || '' });
-      if (m.type === 'categorie') return toonYouTube(h, { categorie: m.categorie || '' });
-      if (m.type === 'afspeellijst') return toonYouTube(h, { afspeellijst: { id: String(m.id || ''), titel: String(m.titel || '') } });
+      const verzoek = m.verzoek === undefined ? null : m.verzoek;
+      if (m.type === 'zoek') return toonYouTube(h, { zoekterm: m.zoekterm || '', verzoek });
+      if (m.type === 'categorie') return toonYouTube(h, { categorie: m.categorie || '', verzoek });
+      if (m.type === 'afspeellijst') return toonYouTube(h, { afspeellijst: { id: String(m.id || ''), titel: String(m.titel || '') }, verzoek });
+      if (m.type === 'kanaal') {
+        // "Meer van …" next to the player: the latest uploads of the channel of the video that plays.
+        let lijst;
+        try {
+          lijst = await youtubeDeps.kanaal(m.kanaalId, { token: h.requestEnvelope.context.System.user.accessToken || '' });
+        } catch (e) {
+          logger.error('Kanaal niet opgehaald', e);
+          lijst = { titel: 'Meer van dit kanaal', items: [], fout: String(e && e.message ? e.message : e) };
+        }
+        const message = { type: 'kanaal', kanaalId: m.kanaalId, lijst: youtube.beperk(lijst), verzoek };
+        return h.responseBuilder.addDirective({ type: 'Alexa.Presentation.HTML.HandleMessage', message }).getResponse();
+      }
       return h.responseBuilder.getResponse();
     },
   };

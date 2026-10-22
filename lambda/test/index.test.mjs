@@ -265,6 +265,7 @@ function metYouTube(extra = {}) {
       populair: async (o) => { vragen.push(['populair', o.categorie]); return lijst },
       zoek: async (q) => { vragen.push(['zoek', q]); return { ...lijst, titel: `Resultaten voor “${q}”`, zoekterm: q } },
       mijn: async (soort, token, o) => { vragen.push(['mijn', soort, token, o.afspeellijst && o.afspeellijst.id]); return { ...lijst, titel: soort, categorie: soort } },
+      kanaal: async (id, o) => { vragen.push(['kanaal', id, o.token]); return { titel: 'Meer van Kanaal', kanaalId: id, items: lijst.items } },
       ...extra,
     },
   })
@@ -326,14 +327,26 @@ test('a failing YouTube call still opens the page, with the error in the list', 
   assert.match(d.data.lijst.fout, /quotaExceeded/)
 })
 
-test('with a linked account YouTube opens on the subscriptions, and the account chips come first', async () => {
+test('with a linked account YouTube still opens on Start (popular), and tells the page it is linked', async () => {
   const { skill, vragen } = metYouTube()
   const res = await skill.invoke(envelope({ type: 'Alexa.Presentation.APL.UserEvent', arguments: ['openYouTube'] }, { html: true, token: 'TOKEN' }))
   const d = htmlDirective(res, 'Alexa.Presentation.HTML.Start')
   assert.equal(d.data.gekoppeld, true)
-  assert.equal(d.data.lijst.categorie, '@abonnementen')
-  assert.deepEqual(d.data.categorieen.slice(0, 4).map((c) => c.id), ['', '@abonnementen', '@leuk', '@afspeellijsten'])
-  assert.deepEqual(vragen, [['mijn', '@abonnementen', 'TOKEN', null]])
+  assert.equal(d.data.lijst.titel, 'Populair in Nederland')
+  assert.deepEqual(vragen, [['populair', '']])
+})
+
+test('answers carry the request number back, and "more from this channel" uses the token when there is one', async () => {
+  const { skill, vragen } = metYouTube()
+  const zoek = await skill.invoke(envelope({ type: 'Alexa.Presentation.HTML.Message', message: { type: 'zoek', zoekterm: 'x', verzoek: 7 } }, { html: true, attributes: { youtube: true } }))
+  assert.equal(htmlDirective(zoek, 'Alexa.Presentation.HTML.HandleMessage').message.verzoek, 7)
+  const res = await skill.invoke(envelope({ type: 'Alexa.Presentation.HTML.Message', message: { type: 'kanaal', kanaalId: 'UCabc', verzoek: 8 } }, { html: true, attributes: { youtube: true }, token: 'TOKEN' }))
+  const m = htmlDirective(res, 'Alexa.Presentation.HTML.HandleMessage').message
+  assert.equal(m.type, 'kanaal')
+  assert.equal(m.kanaalId, 'UCabc')
+  assert.equal(m.verzoek, 8)
+  assert.equal(m.lijst.titel, 'Meer van Kanaal')
+  assert.deepEqual(vragen.at(-1), ['kanaal', 'UCabc', 'TOKEN'])
 })
 
 test('without a linked account an account chip explains how to link and puts a link card in the Alexa app', async () => {
