@@ -60,6 +60,18 @@ twee apparaten met Data Store-ondersteuning "The device does not have any packag
 dus nog niet op de Echo Show 11; oorzaak onbekend (taal van het toestel, slaapstand, of dev-widgets op Vega OS).
 Controleer op het toestel de Widget Gallery en de taalinstelling.
 
+Omweg voor de gegevens van de Mac (22 oktober): ook nadat de eigenaar de widget op het startscherm had gezet bleef het
+antwoord "does not have any package from this skill", en Login with Amazon weigert de scope `alexa:skill_messaging`
+(`invalid_scope`) met dezelfde inloggegevens die voor de data store wel werken. Daarom versleutelt `tools/push.mjs`
+het deel dat alleen de Mac kent (route met kaart, vertrekadvies, agenda en afval, taken, Claude-chats) met AES-256-GCM
+en zet het in een geheime gist; de skill haalt die bij elk scherm op, ontsleutelt hem (`lambda/opslag.js`) en voegt
+hem toe zolang hij hooguit 30 minuten oud is. Sleutel en gistadres staan alleen in `.env` en
+`lambda/credentials.json`; eenmalig aanmaken met `node tools/gist-maken.mjs`. De widget is één tikvlak dat het
+volledige scherm opent.
+
+Elke tien minuten versturen: `~/Library/LaunchAgents/nl.dashboard.push.plist` (ingevuld uit het sjabloon in `tools/`),
+log in `~/Library/Logs/echo-show-dashboard.log`. Stoppen: `launchctl bootout gui/$(id -u)/nl.dashboard.push`.
+
 Scherm blijft staan (22 oktober): het dashboard sloot na een seconde omdat de skill de sessie direct beëindigde. Nu
 blijft de sessie open (geen `shouldEndSession`), vraagt het document twee minuten `idleTimeout`, en stuurt het scherm
 elke 25 seconden een seintje (`handleTick` met een eigen `sequencer`, want tick-handlers draaien in fast mode en slaan

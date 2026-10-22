@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- launchd: elke 10 minuten de widget bijwerken. Vervang de paden, kopieer naar ~/Library/LaunchAgents/ en laad met:
-     launchctl load ~/Library/LaunchAgents/nl.dashboard.push.plist -->
+<!-- launchd: elke 10 minuten versturen (gist voor het volledige scherm, data store voor de widget). Vervang de paden en
+     /Users/JIJ, kopieer naar ~/Library/LaunchAgents/ en laad met:
+     launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/nl.dashboard.push.plist
+     node-ical vraagt Node 22 of nieuwer. -->
 <plist version="1.0">
 <dict>
   <key>Label</key><string>nl.dashboard.push</string>
@@ -13,7 +15,7 @@
   <key>WorkingDirectory</key><string>/PAD/NAAR/Echo Show Dashboard</string>
   <key>StartInterval</key><integer>600</integer>
   <key>RunAtLoad</key><true/>
-  <key>StandardOutPath</key><string>/tmp/nl.dashboard.push.log</string>
-  <key>StandardErrorPath</key><string>/tmp/nl.dashboard.push.log</string>
+  <key>StandardOutPath</key><string>/Users/JIJ/Library/Logs/echo-show-dashboard.log</string>
+  <key>StandardErrorPath</key><string>/Users/JIJ/Library/Logs/echo-show-dashboard.log</string>
 </dict>
 </plist>
