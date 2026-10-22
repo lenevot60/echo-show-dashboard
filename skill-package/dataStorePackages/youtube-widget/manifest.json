@@ -1,0 +1,72 @@
+{
+  "manifest": {
+    "id": "youtube-widget",
+    "version": "1.0.0",
+    "installStateChanges": "INFORM",
+    "updateStateChanges": "INFORM",
+    "presentationDefinitions": [
+      {
+        "url": "presentations/default.tpl"
+      }
+    ],
+    "appliesTo": "${viewport.mode == 'HUB'}"
+  },
+  "packageVersion": "1.0",
+  "packageType": "APL_PACKAGE",
+  "publishingInformation": {
+    "schemaVersion": "1.0",
+    "locales": {
+      "nl-NL": [
+        {
+          "targetViewport": "WIDGET_M",
+          "metadata": {
+            "name": "YouTube",
+            "description": "Eén tik opent YouTube in de browser van je Echo Show.",
+            "keywords": [
+              "youtube",
+              "video"
+            ],
+            "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/youtube-icon-450.png",
+            "previews": [
+              "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/youtube-preview-328x552.png"
+            ]
+          }
+        }
+      ],
+      "en-GB": [
+        {
+          "targetViewport": "WIDGET_M",
+          "metadata": {
+            "name": "YouTube",
+            "description": "One tap opens YouTube in the browser of your Echo Show.",
+            "keywords": [
+              "youtube",
+              "video"
+            ],
+            "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/youtube-icon-450.png",
+            "previews": [
+              "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/youtube-preview-328x552.png"
+            ]
+          }
+        }
+      ],
+      "en-US": [
+        {
+          "targetViewport": "WIDGET_M",
+          "metadata": {
+            "name": "YouTube",
+            "description": "One tap opens YouTube in the browser of your Echo Show.",
+            "keywords": [
+              "youtube",
+              "video"
+            ],
+            "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/youtube-icon-450.png",
+            "previews": [
+              "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/youtube-preview-328x552.png"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

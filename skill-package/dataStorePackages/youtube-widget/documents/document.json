@@ -1,0 +1,101 @@
+{
+  "type": "APL",
+  "version": "2024.3",
+  "description": "Widget (WIDGET_M): a YouTube tile. A tap opens YouTube in the device browser with OpenURL. When the device does not allow opening URLs (environment.allowOpenURL false) or the browser fails, the tile says so instead of doing nothing.",
+  "graphics": {
+    "logo": {
+      "type": "AVG",
+      "version": "1.2",
+      "width": 160,
+      "height": 112,
+      "items": [
+        {
+          "type": "path",
+          "fill": "#FF0033",
+          "pathData": "M28,0 L132,0 Q160,0 160,28 L160,84 Q160,112 132,112 L28,112 Q0,112 0,84 L0,28 Q0,0 28,0 Z"
+        },
+        {
+          "type": "path",
+          "fill": "#FFFFFF",
+          "pathData": "M64,32 L64,80 L106,56 Z"
+        }
+      ]
+    }
+  },
+  "mainTemplate": {
+    "parameters": [
+      "payload"
+    ],
+    "items": [
+      {
+        "type": "TouchWrapper",
+        "width": "100%",
+        "height": "100%",
+        "accessibilityLabel": "Open YouTube",
+        "onPress": [
+          {
+            "type": "OpenURL",
+            "source": "${payload.youtube.url}",
+            "onFail": [
+              {
+                "type": "SetValue",
+                "componentId": "melding",
+                "property": "text",
+                "value": "YouTube kon niet worden geopend (fout ${event.source.value}). Zeg: Alexa, open YouTube."
+              }
+            ]
+          }
+        ],
+        "item": {
+          "type": "Frame",
+          "width": "100%",
+          "height": "100%",
+          "backgroundColor": "#0F0F0F",
+          "borderRadius": 14,
+          "item": {
+            "type": "Container",
+            "width": "100%",
+            "height": "100%",
+            "justifyContent": "center",
+            "alignItems": "center",
+            "items": [
+              {
+                "type": "VectorGraphic",
+                "source": "logo",
+                "width": 160,
+                "height": 112
+              },
+              {
+                "type": "Text",
+                "text": "YouTube",
+                "fontSize": 34,
+                "fontWeight": "700",
+                "color": "#FFFFFF",
+                "paddingTop": 20
+              },
+              {
+                "type": "Text",
+                "text": "Tik om te openen",
+                "fontSize": 15,
+                "color": "#AAAAAA",
+                "paddingTop": 6
+              },
+              {
+                "type": "Text",
+                "id": "melding",
+                "width": "100%",
+                "text": "${environment.allowOpenURL == false ? 'Dit toestel opent geen websites vanuit een widget. Zeg: Alexa, open YouTube.' : ''}",
+                "fontSize": 14,
+                "color": "#FFC531",
+                "textAlign": "center",
+                "paddingTop": 20,
+                "paddingLeft": 16,
+                "paddingRight": 16
+              }
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

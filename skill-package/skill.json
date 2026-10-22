@@ -65,6 +65,9 @@
             "packages": [
               {
                 "id": "dashboard-widget"
+              },
+              {
+                "id": "youtube-widget"
               }
             ]
           },
