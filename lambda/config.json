@@ -1,8 +1,8 @@
 {
   "_uitleg": "Instellingen zonder geheimen. Geheimen (client id en secret van de skill) staan in credentials.json (gitignored) of in omgevingsvariabelen.",
   "titel": "Thuis",
-  "buienradarStationId": 6344,
-  "_buienradarStationId": "Meetstation Rotterdam (stationid 6344 in https://data.buienradar.nl/2.0/feed/json). Kies een ander station: zoek in de feed op stationname.",
+  "buienradarStationId": 6340,
+  "_buienradarStationId": "Meetstation Woensdrecht (stationid 6340), 17 km van Nieuw-Vossemeer, het dichtstbijzijnde station in https://data.buienradar.nl/2.0/feed/json. Tijdelijk, tot de keuze voor Apple Weer.",
   "webUrl": "",
   "_webUrl": "Volledige URL van je eigen webdashboard (bijvoorbeeld Home Assistant). Leeg = de webtegel blijft verborgen.",
   "webTitel": "Webdashboard",
