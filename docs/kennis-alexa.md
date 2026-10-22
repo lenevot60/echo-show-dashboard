@@ -90,6 +90,15 @@ staat er als *onbevestigd* bij.
   YouTube's API geeft geen kijkgeschiedenis, Later bekijken of startpagina; afspelen blijft anoniem (advertenties, niet
   in de geschiedenis). Google-project DHPS: inlogscherm extern, in productie, 1/100 gebruikers. Alexa-terugstuuradressen
   eindigen op `/api/skill/link/M8PYPWJNLS6K8`. De OAuth-client is nog niet aangemaakt (zie geheugen).
+- Tabletweergave (22-10, 23:20): navigatiebalk Start, Abonnementen, Jij; chips; kaarten met kanaalfoto, weergaven en
+  leeftijd; kijkpagina met speler en info links, "Volgende" (rest van de lijst) en "Meer van <kanaal>" rechts,
+  automatisch afspelen, volledig scherm. Elk verzoek van de pagina draagt een nummer (`verzoek`) dat de skill
+  terugstuurt; een antwoord zonder nummer komt van een spraakopdracht. Valkuil: een bericht zonder nummer werd als
+  gesproken zoekopdracht gelezen (koppeluitleg verdween).
+- In de ingesloten speler stonden ondertitels standaard aan (ook zonder `cc_lang_pref`); `unloadModule('captions')`
+  bij de eerste PLAYING per video zet ze uit, de CC-knop zet ze weer aan.
+- Testen zonder toestel: lokale server op web/, `alexa-html.js` via Playwright-route vervangen door een nagebootste
+  Alexa die lijsten uit echte API-gegevens teruggeeft. De kijkpagina speelt dan echt af (vanaf localhost).
 
 ## Gegevens van de Mac naar de skill
 
