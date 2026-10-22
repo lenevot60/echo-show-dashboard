@@ -224,3 +224,24 @@ test('a redraw keeps the original opening time, so the window rule still applies
   const doc = JSON.parse(require('node:fs').readFileSync(new URL('../apl/dashboard.json', import.meta.url), 'utf8'))
   assert.deepEqual(doc.mainTemplate.items[0].handleTick[0].commands[0].arguments, ['blijf', '${payload.ds.bijgewerkt}', '${payload.ds.gestart}'])
 })
+
+const opslagMet = (mac) => ({ lees: async () => mac })
+
+test('the Mac part from the gist is merged into the full screen while it is at most 30 minutes old', async () => {
+  const nu = new Date('2026-10-22T06:00:00Z')
+  const mac = { ts: nu.getTime() - 5 * 60000, taken: [{ titel: 'Offerte', wanneer: 'vandaag' }], aantalTaken: 1, claude: { bezig: 2, wacht: 1, vragen: 0, lijst: [] }, titel: 'mag niet over' }
+  const { skill } = maak({ opslag: opslagMet(mac), nu: () => nu })
+  const ds = directive(await skill.invoke(envelope({ type: 'LaunchRequest' }))).datasources.ds
+  assert.equal(ds.aantalTaken, 1)
+  assert.equal(ds.claude.bezig, 2)
+  assert.equal(ds.titel, 'Thuis', 'only the Mac fields are taken over')
+})
+
+test('Mac data older than 30 minutes is left out, and a failing gist does not break the screen', async () => {
+  const nu = new Date('2026-10-22T06:00:00Z')
+  const oud = maak({ opslag: opslagMet({ ts: nu.getTime() - 31 * 60000, aantalTaken: 3 }), nu: () => nu })
+  assert.equal(directive(await oud.skill.invoke(envelope({ type: 'LaunchRequest' }))).datasources.ds.aantalTaken, undefined)
+  const kapot = maak({ opslag: { lees: async () => { throw new Error('Gist 500') } }, nu: () => nu })
+  const ds = directive(await kapot.skill.invoke(envelope({ type: 'LaunchRequest' }))).datasources.ds
+  assert.equal(ds.titel, 'Thuis')
+})

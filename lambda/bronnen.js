@@ -67,6 +67,12 @@ function credentials() {
   };
 }
 
+/** Where the Mac's encrypted part lives (see opslag.js): env MAC_GIST_URL/MAC_SLEUTEL, else credentials.json. */
+function macBron() {
+  const b = leesJson(path.join(__dirname, 'credentials.json'), {});
+  return { url: process.env.MAC_GIST_URL || b.gistUrl || '', sleutel: process.env.MAC_SLEUTEL || b.macSleutel || '' };
+}
+
 const DAGEN = ['zo', 'ma', 'di', 'wo', 'do', 'vr', 'za'];
 
 function dagNaam(isoDatum) {
@@ -257,6 +263,8 @@ module.exports = {
   verzamel,
   lwaToken,
   pushNaarDataStore,
+  macBron,
+  fetchImplStandaard,
   formatTijd,
   fetchViaHttps,
 };

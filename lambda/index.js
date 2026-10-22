@@ -5,6 +5,7 @@
  */
 const Alexa = require('ask-sdk-core');
 const bronnen = require('./bronnen');
+const { gistOpslag } = require('./opslag');
 const dashboardDocument = require('./apl/dashboard.json');
 
 const TOKEN = 'dashboard';
@@ -88,10 +89,31 @@ function buildSkill(deps = {}) {
   const credentials = deps.credentials || bronnen.credentials;
   const logger = deps.logger || console;
   const nu = deps.nu || (() => new Date());
+  const opslag = deps.opslag !== undefined ? deps.opslag : gistOpslag({ ...bronnen.macBron(), fetchImpl: bronnen.fetchImplStandaard });
+
+  /** Fields only the Mac knows; the Mac puts them, encrypted, in a secret gist (see opslag.js). */
+  const MAC_VELDEN = ['route', 'vertrek', 'agenda', 'aantalAgenda', 'afval', 'taken', 'aantalTaken', 'claude'];
+  const MAC_GELDIG_MS = 30 * 60 * 1000;
+
+  /** What the skill collects itself (weather, rain), plus the Mac's last message when it is at most 30 minutes old. */
+  async function inhoud(handlerInput) {
+    const content = await verzamel();
+    if (!opslag) return content;
+    let mac = null;
+    try {
+      mac = await opslag.lees();
+    } catch (e) {
+      logger.error('Mac-gegevens niet gelezen', e);
+    }
+    if (!mac || !Number.isFinite(mac.ts) || nu().getTime() - mac.ts > MAC_GELDIG_MS) return content;
+    const extra = {};
+    for (const k of MAC_VELDEN) if (mac[k] !== undefined) extra[k] = mac[k];
+    return { ...content, ...extra };
+  }
 
   /** Fresh content, pushed to the widget of this user when the skill has its client credentials. */
   async function vernieuw(handlerInput) {
-    const content = await verzamel();
+    const content = await inhoud(handlerInput);
     const creds = credentials();
     if (!creds.clientId || !creds.clientSecret) {
       logger.log('Geen client id en secret: alleen het scherm wordt bijgewerkt, de widget niet');
@@ -122,7 +144,7 @@ function buildSkill(deps = {}) {
     async handle(h) {
       const s = t(h);
       if (!heeftApl(h)) return h.responseBuilder.speak(s.geenScherm).getResponse();
-      const content = await verzamel();
+      const content = await inhoud(h);
       // No withShouldEndSession: on a screen device the session (and the screen) then stays open, mic closed.
       return h.responseBuilder.speak(s.hier).addDirective(renderDashboard(content)).getResponse();
     },
@@ -143,7 +165,7 @@ function buildSkill(deps = {}) {
     canHandle: (h) => isIntent(h, 'OpenWebIntent'),
     async handle(h) {
       const s = t(h);
-      const content = await verzamel();
+      const content = await inhoud(h);
       if (!content.web || !heeftApl(h)) return h.responseBuilder.speak(s.geenWeb).getResponse();
       // The document opens the URL on mount (OpenURL) when openWeb is set; Silk then shows the page.
       return h.responseBuilder.speak(s.web).addDirective(renderDashboard(content, { openWeb: true })).getResponse();
@@ -157,7 +179,7 @@ function buildSkill(deps = {}) {
       const id = userId(h);
       const rb = h.responseBuilder.speak(s.id).withSimpleCard(s.kaartTitel, id);
       if (!heeftApl(h)) return rb.withShouldEndSession(true).getResponse();
-      const content = await verzamel();
+      const content = await inhoud(h);
       return rb.addDirective(renderDashboard(content, { gebruikersId: id })).getResponse();
     },
   };
@@ -204,7 +226,7 @@ function buildSkill(deps = {}) {
       const s = t(h);
       const actie = (h.requestEnvelope.request.arguments || [])[0];
       if (actie === 'openDashboard') {
-        const content = await verzamel();
+        const content = await inhoud(h);
         return h.responseBuilder.addDirective(renderDashboard(content)).getResponse();
       }
       if (actie === 'refresh') {
@@ -227,7 +249,7 @@ function buildSkill(deps = {}) {
         }
         const sinds = Date.parse(args[1] || '');
         if (Number.isFinite(sinds) && t0 - sinds < verversMs) return h.responseBuilder.getResponse();
-        const content = await verzamel();
+        const content = await inhoud(h);
         const extra = Number.isFinite(gestart) ? { gestart } : {};
         return h.responseBuilder.addDirective(renderDashboard(content, extra)).getResponse();
       }

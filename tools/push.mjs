@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /*
- * Collects everything for the dashboard on this Mac and puts it in the device data store of the Echo Show:
+ * Collects everything for the dashboard on this Mac and sends it to the Echo Show: encrypted through a secret gist to
+ * the skill (full screen), and to the device data store (widget, once the device has the package). Sources:
  * weather and rain (Buienradar), travel time and map (Google), appointments and waste days (Google Calendar iCal),
  * tasks (Apple Reminders) and the Claude Code sessions on this Mac. Each source is optional; a failing source adds a
  * short line to `meldingen` instead of stopping the rest.
@@ -16,10 +17,13 @@ import { claudeChats } from './mac/claude-chats.mjs'
 import { kiesTaken, leesHerinneringen } from './mac/herinneringen.mjs'
 import { leesAgenda } from './mac/agenda.mjs'
 import { routeNaarWerk, vertrekAdvies } from './mac/route.mjs'
+import { execFileSync } from 'node:child_process'
 
 const require = createRequire(import.meta.url)
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const bronnen = require(join(root, 'lambda', 'bronnen.js'))
+const { versleutel } = require(join(root, 'lambda', 'opslag.js'))
+const gh = existsSync('/opt/homebrew/bin/gh') ? '/opt/homebrew/bin/gh' : 'gh'
 
 const envPad = join(root, '.env')
 if (existsSync(envPad)) {
@@ -89,6 +93,26 @@ if (!userId || !creds.clientId || !creds.clientSecret) {
   console.error('Vul ALEXA_USER_ID, ALEXA_CLIENT_ID en ALEXA_CLIENT_SECRET in .env (zie .env.example).')
   process.exit(1)
 }
+
+// 1. To the skill, encrypted through a secret gist (lambda/opslag.js, set up once with tools/gist-maken.mjs): the full
+//    screen shows it, also without the widget package on the device. Only what the skill cannot collect itself.
+const macDeel = (c) => ({ ts: c.ts, bijgewerktTekst: c.bijgewerktTekst, route: c.route, vertrek: c.vertrek, agenda: c.agenda, aantalAgenda: c.aantalAgenda, afval: c.afval, taken: c.taken, aantalTaken: c.aantalTaken, claude: c.claude })
+if (process.env.MAC_SLEUTEL && process.env.MAC_GIST_ID) {
+  try {
+    const pakket = JSON.stringify(versleutel(macDeel(content), process.env.MAC_SLEUTEL))
+    execFileSync(gh, ['api', '--method', 'PATCH', `/gists/${process.env.MAC_GIST_ID}`, '--input', '-'], {
+      input: JSON.stringify({ files: { 'dashboard.json': { content: pakket } } }),
+      stdio: ['pipe', 'ignore', 'pipe'],
+    })
+    console.log(`${new Date().toISOString()} versleuteld naar de gist (${Buffer.byteLength(pakket, 'utf8')} bytes)`)
+  } catch (e) {
+    console.error('Gist niet bijgewerkt:', String(e.stderr || e.message || e).slice(0, 200))
+  }
+} else {
+  console.error('MAC_SLEUTEL of MAC_GIST_ID ontbreekt; draai eenmalig node tools/gist-maken.mjs')
+}
+
+// 2. To the device data store (widget). Fails with INVALID_DEVICE as long as the device has no package of this skill.
 try {
   const result = await bronnen.pushNaarDataStore({
     content,

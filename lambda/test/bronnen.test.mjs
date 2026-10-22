@@ -104,3 +104,25 @@ test('the https fallback fetches the real Buienradar feed like fetch does', asyn
   const feed = await r.json()
   assert.ok(Array.isArray(feed.actual.stationmeasurements))
 })
+
+test('versleutel and ontsleutel round-trip; a wrong key or a changed package fails', () => {
+  const { versleutel, ontsleutel } = require('../opslag.js')
+  const sleutel = Buffer.alloc(32, 7).toString('base64')
+  const pakket = versleutel({ ts: 1, taken: ['a'] }, sleutel)
+  assert.deepEqual(ontsleutel(pakket, sleutel), { ts: 1, taken: ['a'] })
+  assert.ok(!JSON.stringify(pakket).includes('taken'))
+  assert.throws(() => ontsleutel(pakket, Buffer.alloc(32, 8).toString('base64')))
+  const veranderd = { ...pakket, data: Buffer.from('x' + Buffer.from(pakket.data, 'base64').toString('latin1'), 'latin1').toString('base64') }
+  assert.throws(() => ontsleutel(veranderd, sleutel))
+})
+
+test('gistOpslag reads and decrypts the gist, without a cached copy, and is off without url or key', async () => {
+  const { versleutel, gistOpslag } = require('../opslag.js')
+  const sleutel = Buffer.alloc(32, 3).toString('base64')
+  let gevraagd = ''
+  const fetchImpl = async (url) => { gevraagd = url; return { ok: true, status: 200, text: async () => JSON.stringify(versleutel({ ts: 5 }, sleutel)) } }
+  const o = gistOpslag({ url: 'https://gist.githubusercontent.com/x/y/raw/dashboard.json', sleutel, fetchImpl })
+  assert.deepEqual(await o.lees(), { ts: 5 })
+  assert.match(gevraagd, /dashboard\.json\?t=\d+$/)
+  assert.equal(gistOpslag({ url: '', sleutel, fetchImpl }), null)
+})
