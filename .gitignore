@@ -5,3 +5,4 @@ lambda/credentials.json
 *.log
 .DS_Store
 tools/console/shots/
+tools/mac/bin/

@@ -119,6 +119,37 @@ async function haalWeer(stationId, fetchImpl = fetchImplStandaard) {
   return weerUitFeed(await r.json(), stationId);
 }
 
+const RAIN_URL = 'https://gpsgadget.buienradar.nl/data/raintext';
+
+/** Buienradar rain forecast for the next two hours at one spot: value|HH:MM per 5 minutes, value 0-255. */
+function regenUitTekst(tekst) {
+  const punten = String(tekst)
+    .split(/\r?\n/)
+    .map((r) => /^(\d{1,3})\|(\d{1,2}:\d{2})$/.exec(r.trim()))
+    .filter(Boolean)
+    .map((m) => {
+      const waarde = Number(m[1]);
+      const mm = waarde === 0 ? 0 : Math.pow(10, (waarde - 109) / 32);
+      return { tijd: m[2].padStart(5, '0'), mm: Math.round(mm * 10) / 10 };
+    });
+  if (!punten.length) return null;
+  const eerste = punten.find((p) => p.mm >= 0.1);
+  const max = Math.max(...punten.map((p) => p.mm));
+  return {
+    samenvatting: eerste ? (punten[0].mm >= 0.1 ? 'Het regent nu' : `Buien vanaf ${eerste.tijd}`) : 'Droog komende 2 uur',
+    balken: punten.map((p) => Math.round(Math.min(1, p.mm / 4) * 100)),
+    max: Math.round(max * 10) / 10,
+    van: punten[0].tijd,
+    tot: punten[punten.length - 1].tijd,
+  };
+}
+
+async function haalRegen(lat, lon, fetchImpl = fetchImplStandaard) {
+  const r = await fetchImpl(`${RAIN_URL}?lat=${lat}&lon=${lon}`);
+  if (!r.ok) throw new Error(`Buienradar regen ${r.status}`);
+  return regenUitTekst(await r.text());
+}
+
 /** Short lines for the dashboard, from notities.json; strings or {titel, sub}. */
 function notities() {
   const n = leesJson(path.join(__dirname, 'notities.json'), { items: [] });
@@ -138,9 +169,18 @@ async function verzamel({ fetchImpl = fetchImplStandaard, nu = new Date() } = {}
   } catch (e) {
     fout = `Weer niet opgehaald: ${e && e.message ? e.message : e}`;
   }
+  let regen = null;
+  if (c.plek && c.plek.lat != null) {
+    try {
+      regen = await haalRegen(c.plek.lat, c.plek.lon, fetchImpl);
+    } catch (e) {
+      fout = [fout, `Regen niet opgehaald: ${e && e.message ? e.message : e}`].filter(Boolean).join(' · ');
+    }
+  }
   const items = notities();
   return {
     titel: c.titel || 'Dashboard',
+    regen,
     bijgewerkt: nu.toISOString(),
     bijgewerktTekst: formatTijd(nu),
     weer,
@@ -199,6 +239,8 @@ module.exports = {
   credentials,
   weerUitFeed,
   haalWeer,
+  regenUitTekst,
+  haalRegen,
   notities,
   verzamel,
   lwaToken,

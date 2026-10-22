@@ -5,11 +5,15 @@
   "description": "Eigen dashboard voor de Echo Show 11: Alexa-skill (lambda/, skill-package/) en hulpscripts (tools/)",
   "type": "module",
   "scripts": {
-    "test": "cd lambda && npm test",
+    "test": "cd lambda && npm test && cd .. && node --test tools/mac/test/*.test.mjs",
     "push": "node tools/push.mjs",
-    "console": "node tools/console/browser.mjs start"
+    "console": "node tools/console/browser.mjs start",
+    "herinneringen:bouw": "swiftc -O -o tools/mac/bin/herinneringen tools/mac/herinneringen.swift"
   },
   "devDependencies": {
     "playwright-core": "^1.56.1"
+  },
+  "dependencies": {
+    "node-ical": "^0.27.3"
   }
 }

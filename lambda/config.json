@@ -11,5 +11,20 @@
   "blijfOpScherm": true,
   "_blijfOpScherm": "true: het dashboard blijft staan zolang het in beeld is; de Show stuurt elke 25 seconden een seintje en de skill houdt de sessie open. false: het scherm sluit na ongeveer 30 seconden.",
   "verversMinuten": 10,
-  "_verversMinuten": "Zolang het dashboard in beeld blijft, haalt de skill na dit aantal minuten nieuwe gegevens op."
+  "_verversMinuten": "Zolang het dashboard in beeld blijft, haalt de skill na dit aantal minuten nieuwe gegevens op.",
+  "plek": {
+    "lat": 51.59,
+    "lon": 4.22
+  },
+  "_plek": "Dorpskern Nieuw-Vossemeer, afgerond; voor de regen van Buienradar (gpsgadget.buienradar.nl/data/raintext).",
+  "thuis": "Nieuw-Vossemeer, Nederland",
+  "werk": "Marisstraat 8, 3364 AZ Sliedrecht",
+  "werkPatroon": "sliedrecht|marisstraat|dhps",
+  "_route": "Route met live verkeer via Google (GOOGLE_MAPS_KEY in .env op de Mac). routeUren: alleen tussen deze uren vraagt de Mac een nieuwe route op, elke 10 minuten.",
+  "routeUren": [
+    6,
+    21
+  ],
+  "takenLijsten": [],
+  "_takenLijsten": "Namen van lijsten in Apple Herinneringen; leeg = alle lijsten. Getoond: te laat en vandaag eerst, dan gemarkeerd."
 }

@@ -51,9 +51,14 @@ test('verzamel never throws: a failing feed becomes `fout`', async () => {
 })
 
 test('verzamel returns the weather when the feed answers', async () => {
-  const content = await bronnen.verzamel({ fetchImpl: async () => ({ ok: true, json: async () => feed }) })
+  // The station comes from config.json; give the test feed that station id.
+  const id = bronnen.config().buienradarStationId
+  const metStation = { ...feed, actual: { stationmeasurements: [{ ...feed.actual.stationmeasurements[0], stationid: id }] } }
+  const fetchImpl = async (url) => (String(url).includes('raintext') ? { ok: true, text: async () => '000|11:35\n000|11:40\n' } : { ok: true, json: async () => metStation })
+  const content = await bronnen.verzamel({ fetchImpl })
   assert.equal(content.fout, null)
   assert.equal(content.weer.beschrijving, 'Zwaar bewolkt')
+  assert.equal(content.regen.samenvatting, 'Droog komende 2 uur')
   assert.ok(content.titel)
 })
 
