@@ -77,6 +77,19 @@ staat er als *onbevestigd* bij.
 - De pagina stuurt elke 60 s een `blijf`-bericht om de 300 s-grens voor te blijven; of dat de sessie tijdens een lange
   video openhoudt, is *onbevestigd*.
 - Een tweede widget toevoegen: zie hieronder. De YouTube-widget stuurt `SendEvent openYouTube` (STANDARD).
+- 22-10, 18:25: Alexander zag een wit scherm, maar de skill kreeg in 100 minuten geen enkel verzoek van de Show (alleen
+  consoletests). Dus niet de webapp: waarschijnlijk de eerste widgetversie (OpenURL naar Silk) of een tik die de skill
+  niet bereikt. Logboeken lezen kan nu: `node tools/console/logs.mjs [minuten]` (CloudWatch-tabblad moet open zijn via
+  Code > CloudWatch Logs). De skill logt sindsdien elke start, tik, paginamelding en sessiefout met de interfaces van
+  het toestel; de pagina meldt `gestart` met user-agent en schermmaat en toont onderin welke stap faalt.
+- Webpagina: geen render-blokkerende bronnen vóór de stijl (een synchroon script in `<head>` gaf bij een trage CDN een
+  wit scherm); de Alexa-bibliotheek wordt dynamisch geladen.
+- Eigen account: Alexa account linking met Google (Auth Code Grant, `https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&prompt=consent`,
+  token `https://oauth2.googleapis.com/token`, scope `youtube.readonly`, "zonder koppeling inschakelen" aan). De skill
+  leest dan abonnementen (laatste 3 uploads per kanaal, ~1 eenheid per kanaal), leuk gevonden en afspeellijsten.
+  YouTube's API geeft geen kijkgeschiedenis, Later bekijken of startpagina; afspelen blijft anoniem (advertenties, niet
+  in de geschiedenis). Google-project DHPS: inlogscherm extern, in productie, 1/100 gebruikers. Alexa-terugstuuradressen
+  eindigen op `/api/skill/link/M8PYPWJNLS6K8`. De OAuth-client is nog niet aangemaakt (zie geheugen).
 
 ## Gegevens van de Mac naar de skill
 
