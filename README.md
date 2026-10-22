@@ -8,6 +8,10 @@ Waarom zo: de Echo Show 11 draait Vega OS en Amazon sluit eigen apps voor Echo-a
 Echo devices? No."). Een eigen launcher, sideloading of root bestaat er niet voor. De officiële route is een
 Alexa-skill met APL, en dat is dit project. Het plan met bronnen staat in `docs/plan.md`.
 
+
+Alles wat we onderweg over Alexa-skills, widgets, APL en de console hebben geleerd staat in
+[`docs/kennis-alexa.md`](docs/kennis-alexa.md).
+
 ## Wat erin zit
 
 | Onderdeel                  | Waar                                                        | Wat het doet                                                                                                   |
