@@ -154,6 +154,7 @@ function buildSkill(deps = {}) {
     canHandle: (h) => isType(h, 'LaunchRequest') || isIntent(h, 'OpenDashboardIntent'),
     async handle(h) {
       const s = t(h);
+      logger.log('Start', Alexa.getRequestType(h.requestEnvelope), 'interfaces', Object.keys(Alexa.getSupportedInterfaces(h.requestEnvelope)).join(','));
       if (!heeftApl(h)) return h.responseBuilder.speak(s.geenScherm).getResponse();
       const content = await inhoud(h);
       // No withShouldEndSession: on a screen device the session (and the screen) then stays open, mic closed.
@@ -204,6 +205,7 @@ function buildSkill(deps = {}) {
       lijst = { titel: 'YouTube', items: [], fout: String(e && e.message ? e.message : e) };
     }
     const sessie = h.attributesManager.getSessionAttributes();
+    logger.log('YouTube', sessie.youtube ? 'lijst naar de pagina' : 'start webapp', JSON.stringify({ zoekterm, categorie, items: (lijst.items || []).length, fout: lijst.fout || null }));
     if (sessie.youtube) {
       return h.responseBuilder.addDirective({ type: 'Alexa.Presentation.HTML.HandleMessage', message: { type: 'lijst', lijst } }).getResponse();
     }
@@ -234,9 +236,9 @@ function buildSkill(deps = {}) {
     canHandle: (h) => isType(h, 'Alexa.Presentation.HTML.Message'),
     async handle(h) {
       const m = h.requestEnvelope.request.message || {};
+      logger.log('Bericht van YouTube', JSON.stringify(m));
       if (m.type === 'zoek') return toonYouTube(h, { zoekterm: m.zoekterm || '' });
       if (m.type === 'categorie') return toonYouTube(h, { categorie: m.categorie || '' });
-      if (m.type !== 'blijf') logger.log('Onbekend bericht van YouTube', JSON.stringify(m));
       return h.responseBuilder.getResponse();
     },
   };
@@ -294,6 +296,7 @@ function buildSkill(deps = {}) {
     async handle(h) {
       const s = t(h);
       const actie = (h.requestEnvelope.request.arguments || [])[0];
+      if (actie !== 'blijf') logger.log('Tik', JSON.stringify(h.requestEnvelope.request.arguments || []), 'interfaces', Object.keys(Alexa.getSupportedInterfaces(h.requestEnvelope)).join(','));
       if (actie === 'openYouTube') return toonYouTube(h);
       if (actie === 'openDashboard') {
         const content = await inhoud(h);
@@ -343,7 +346,8 @@ function buildSkill(deps = {}) {
   const SessionEndedHandler = {
     canHandle: (h) => isType(h, 'SessionEndedRequest'),
     handle(h) {
-      logger.log('Sessie beëindigd', JSON.stringify(h.requestEnvelope.request.reason || ''));
+      const r = h.requestEnvelope.request;
+      logger.log('Sessie beëindigd', JSON.stringify({ reden: r.reason || '', fout: r.error || null }));
       return h.responseBuilder.getResponse();
     },
   };

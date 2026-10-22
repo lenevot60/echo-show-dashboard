@@ -9,9 +9,6 @@
   with a first list in `data`; searches and categories go to the skill (alexa.skill.sendMessage), which asks the
   YouTube Data API and answers with a new list. Videos play in the official YouTube IFrame player.
 -->
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.html.games.alexa.a2z.com/alexa-html/latest/alexa-html.js"></script>
 <style>
   :root {
     --achter: #0f0f0f;
@@ -23,6 +20,7 @@
     --rand: #303030;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { background: #0f0f0f; }
   html, body { margin: 0; height: 100%; background: var(--achter); color: var(--tekst); font-family: Roboto, Arial, sans-serif; overflow: hidden; user-select: none; }
   button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
 
@@ -68,6 +66,8 @@
 
   #toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); max-width: 80%; padding: 14px 22px; border-radius: 10px; background: #e8e8e8; color: #0f0f0f; font-size: 18px; opacity: 0; transition: opacity .2s, transform .2s; z-index: 20; pointer-events: none; }
   #toast.zichtbaar { opacity: 1; transform: translate(-50%, 0); }
+  #status { position: fixed; left: 28px; bottom: 16px; font-size: 14px; color: #8a8a8a; z-index: 5; }
+  #status.weg { display: none; }
 </style>
 </head>
 <body>
@@ -85,7 +85,7 @@
   </header>
   <nav id="chips"></nav>
   <main>
-    <h1 id="kop">YouTube</h1>
+    <h1 id="kop">Laden…</h1>
     <p id="melding"></p>
     <div id="raster"></div>
   </main>
@@ -95,6 +95,7 @@
   <button id="terug"><svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>Terug</button>
 </div>
 <div id="toast" role="status"></div>
+<div id="status">Laden…</div>
 <script>
 'use strict';
 const STANDAARD_CATEGORIEEN = [{ id: '', naam: 'Populair' }];
@@ -218,6 +219,7 @@ function sluit() {
 
 window.onYouTubeIframeAPIReady = () => {
   staat.ytKlaar = true;
+  stap('speler', 'ok');
   if (staat.wacht) { const id = staat.wacht; staat.wacht = null; speel(id); }
 };
 
@@ -251,10 +253,30 @@ function ontvang(m) {
   if (m.type === 'lijst') { sluit(); toon(m.lijst); }
 }
 
+const stappen = { pagina: 'ok', alexa: '…', verbinding: '…', speler: '…' };
+function stap(naam, waarde) {
+  stappen[naam] = waarde;
+  const s = $('status');
+  s.textContent = `pagina ${stappen.pagina} · Alexa ${stappen.alexa} · verbinding ${stappen.verbinding} · speler ${stappen.speler}`;
+  const klaar = Object.values(stappen).every((w) => w === 'ok');
+  clearTimeout(stap.timer);
+  if (klaar) stap.timer = setTimeout(() => s.classList.add('weg'), 4000);
+  else s.classList.remove('weg');
+}
+stap('pagina', 'ok');
+setTimeout(() => { if (!staat.ytKlaar) stap('speler', 'niet geladen'); }, 15000);
+
 chips(STANDAARD_CATEGORIEEN);
-if (window.Alexa) {
+const bib = document.createElement('script');
+bib.src = 'https://cdn.html.games.alexa.a2z.com/alexa-html/latest/alexa-html.js';
+bib.onload = () => { stap('alexa', 'ok'); start(); };
+bib.onerror = () => { stap('alexa', 'niet geladen'); $('kop').textContent = 'YouTube'; $('melding').textContent = 'De Alexa-bibliotheek laadt niet; zonder die kan de pagina de skill niet bereiken.'; };
+document.head.append(bib);
+
+function start() {
   Alexa.create({ version: '1.1' })
     .then(({ alexa, message }) => {
+      stap('verbinding', 'ok');
       staat.alexa = alexa;
       alexa.skill.onMessage(ontvang);
       try {
@@ -268,10 +290,14 @@ if (window.Alexa) {
       toon(message && message.lijst);
       // The web app session ends after 300 s without interaction; a ping now and then keeps it while a video runs.
       setInterval(() => stuur({ type: 'blijf' }), 60000);
+      stuur({ type: 'gestart', ua: navigator.userAgent, breed: innerWidth, hoog: innerHeight, dpr: devicePixelRatio, speler: staat.ytKlaar });
     })
-    .catch((e) => { $('melding').textContent = `Alexa niet bereikbaar (${e && e.code ? e.code : e}).`; });
-} else {
-  $('melding').textContent = 'Deze pagina werkt binnen de YouTube-skill op de Echo Show.';
+    .catch((e) => {
+      const code = e && e.code ? e.code : String(e);
+      stap('verbinding', `fout ${code}`);
+      $('kop').textContent = 'YouTube';
+      $('melding').textContent = `Alexa niet bereikbaar (${code}). Deze pagina werkt binnen de YouTube-skill op de Echo Show.`;
+    });
 }
 </script>
 </body>
