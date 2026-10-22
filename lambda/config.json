@@ -11,6 +11,12 @@
   "blijfOpScherm": true,
   "_blijfOpScherm": "true: het dashboard blijft staan zolang het in beeld is; de Show stuurt elke 25 seconden een seintje en de skill houdt de sessie open. false: het scherm sluit na ongeveer 30 seconden.",
   "verversMinuten": 10,
+  "schermAan": {
+    "van": "06:00",
+    "tot": "10:00"
+  },
+  "handmatigMinuten": 15,
+  "_schermAan": "Tussen van en tot (tijd Amsterdam) blijft het volledige scherm aan; een Alexa-routine opent het om 06:00. Daarbuiten blijft het na openen of de laatste tik handmatigMinuten staan. Weglaten = altijd blijven.",
   "_verversMinuten": "Zolang het dashboard in beeld blijft, haalt de skill na dit aantal minuten nieuwe gegevens op.",
   "plek": {
     "lat": 51.59,
@@ -27,5 +33,7 @@
     21
   ],
   "takenLijsten": [],
+  "takenBereik": "vandaag-morgen",
+  "_takenBereik": "vandaag-morgen: alleen herinneringen met een datum vandaag of morgen. alles: ook te laat, gemarkeerd en hoge prioriteit.",
   "_takenLijsten": "Namen van lijsten in Apple Herinneringen; leeg = alle lijsten. Getoond: te laat en vandaag eerst, dan gemarkeerd."
 }

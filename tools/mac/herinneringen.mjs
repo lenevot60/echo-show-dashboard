@@ -39,8 +39,11 @@ export function leesHerinneringen() {
 const dag = (d) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Amsterdam' }).format(d)
 const uurMin = (d) => new Intl.DateTimeFormat('nl-NL', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Amsterdam' }).format(d)
 
-/** Overdue and due-today first, then flagged and high priority; at most `max`. Lists can be limited. */
-export function kiesTaken(alle, { nu = new Date(), max = 4, lijsten = [] } = {}) {
+/**
+ * Overdue and due-today first, then flagged and high priority; at most `max`. Lists can be limited.
+ * bereik 'vandaag-morgen' keeps only reminders due today or tomorrow (Alexander's choice, 22-10).
+ */
+export function kiesTaken(alle, { nu = new Date(), max = 4, lijsten = [], bereik = 'alles' } = {}) {
   const vandaag = dag(nu)
   const morgen = dag(new Date(nu.getTime() + 86_400_000))
   const gekozen = alle
@@ -57,7 +60,7 @@ export function kiesTaken(alle, { nu = new Date(), max = 4, lijsten = [] } = {})
       else if (t.prio && t.prio > 0 && t.prio <= 4) gewicht = 4
       return { titel: String(t.titel).slice(0, 60), lijst: t.lijst, wanneer, gewicht, d: d ? d.getTime() : Infinity }
     })
-    .filter((t) => t.gewicht < 9)
+    .filter((t) => (bereik === 'vandaag-morgen' ? t.gewicht === 1 || t.gewicht === 3 : t.gewicht < 9))
     .sort((a, b) => a.gewicht - b.gewicht || a.d - b.d)
   return { open: gekozen.length, lijst: gekozen.slice(0, max).map(({ gewicht, d, ...rest }) => rest) }
 }

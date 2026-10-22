@@ -47,10 +47,14 @@ const basis = await bronnen.verzamel()
 if (basis.fout) meldingen.push(basis.fout)
 const nu = new Date()
 const key = process.env.GOOGLE_MAPS_KEY || ''
-const agenda = process.env.GOOGLE_AGENDA_ICS ? await poging('Agenda', () => leesAgenda(process.env.GOOGLE_AGENDA_ICS, { nu })) : null
+const agendaBronnen = [
+  ...String(process.env.GOOGLE_AGENDA_ICS || '').split(/[\s,]+/).filter(Boolean).map((url) => ({ url })),
+  ...String(process.env.AFVAL_ICS || '').split(/[\s,]+/).filter(Boolean).map((url) => ({ url, afval: true })),
+]
+const agenda = agendaBronnen.length ? await poging('Agenda', () => leesAgenda(agendaBronnen, { nu })) : null
 const route = await poging('Route', () => routeNaarWerk({ key, van: cfg.thuis, naar: cfg.werk, uren: cfg.routeUren || [6, 21], nu }))
 const vertrek = agenda ? await poging('Vertrekadvies', () => vertrekAdvies({ agenda, werkRoute: route, key, van: cfg.thuis, werkPatroon: cfg.werkPatroon, nu })) : null
-const taken = await poging('Herinneringen', () => kiesTaken(leesHerinneringen(), { nu, lijsten: cfg.takenLijsten || [] }))
+const taken = await poging('Herinneringen', () => kiesTaken(leesHerinneringen(), { nu, lijsten: cfg.takenLijsten || [], bereik: cfg.takenBereik || 'alles' }))
 const claude = await poging('Claude-chats', () => claudeChats())
 
 const content = {

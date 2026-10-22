@@ -45,6 +45,37 @@ test('tasks: overdue and today first, undated unflagged tasks left out', () => {
   assert.equal(kiesTaken([{ titel: 'Morgen', lijst: 'Y', due: '2026-10-23T10:00:00Z' }], { nu, lijsten: ['X'] }).open, 0)
 })
 
+test('tasks: bereik vandaag-morgen leaves out overdue, flagged and undated tasks', () => {
+  const nu = new Date('2026-10-22T08:00:00Z')
+  const r = kiesTaken([
+    { titel: 'Gisteren', lijst: 'X', due: '2026-10-21T10:00:00Z' },
+    { titel: 'Vandaag', lijst: 'X', due: '2026-10-22T13:00:00Z', heeftTijd: true },
+    { titel: 'Morgen', lijst: 'X', due: '2026-10-23T10:00:00Z' },
+    { titel: 'Gemarkeerd', lijst: 'X', due: null, vlag: true },
+    { titel: 'Volgende week', lijst: 'X', due: '2026-10-29T10:00:00Z' },
+  ], { nu, bereik: 'vandaag-morgen' })
+  assert.deepEqual(r.lijst.map((t) => [t.titel, t.wanneer]), [['Vandaag', 'vandaag 15:00'], ['Morgen', 'morgen']])
+  assert.equal(r.open, 2)
+})
+
+test('agenda: the waste calendar gives the next collection day, also when it is further than tomorrow', () => {
+  const ics = [
+    'BEGIN:VCALENDAR', 'VERSION:2.0',
+    'BEGIN:VEVENT', 'UID:a', 'SUMMARY:Restafval', 'DTSTART;VALUE=DATE:20261027', 'DTEND;VALUE=DATE:20261028', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:b', 'SUMMARY:Papier', 'DTSTART;VALUE=DATE:20261027', 'DTEND;VALUE=DATE:20261028', 'END:VEVENT',
+    'BEGIN:VEVENT', 'UID:c', 'SUMMARY:Ophaaldag', 'DTSTART;VALUE=DATE:20261103', 'DTEND;VALUE=DATE:20261104', 'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n')
+  const nu = new Date('2026-10-22T06:00:00Z')
+  const afval = instanties(ical.sync.parseICS(ics), { van: new Date('2026-10-21T18:00:00Z'), tot: new Date('2026-11-05T00:00:00Z') }).map((a) => ({ ...a, afval: true }))
+  const afspraak = { titel: 'Tandarts', plek: '', start: new Date('2026-10-26T08:00:00Z'), eind: new Date('2026-10-26T09:00:00Z'), heleDag: false }
+  const rijen = vatAgendaSamen([...afval, afspraak].sort((a, b) => a.start - b.start), { nu })
+  assert.deepEqual(rijen.map((r) => [r.tijd, r.titel, r.soort]), [
+    ['di 27 okt', 'Restafval', 'afval'],
+    ['di 27 okt', 'Papier', 'afval'],
+  ])
+})
+
 test('agenda: recurring events expand, waste days are recognised, past items drop out', () => {
   const ics = [
     'BEGIN:VCALENDAR', 'VERSION:2.0',

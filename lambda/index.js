@@ -50,13 +50,26 @@ function userId(handlerInput) {
   return handlerInput.requestEnvelope.context.System.user.userId;
 }
 
-/** Keep-alive settings from config.json: the screen stays while the device keeps pinging (see dashboard.json). */
+/**
+ * Keep-alive settings from config.json: the screen stays while the device keeps pinging (see dashboard.json).
+ * Inside schermAan (Amsterdam time, e.g. 06:00-10:00, opened by an Alexa routine) it stays; outside it, a screen
+ * that was opened by hand stays handmatigMinuten after it was opened or last tapped.
+ */
 function blijfInstellingen() {
   const c = bronnen.config();
   return {
     blijf: c.blijfOpScherm !== false,
     verversMs: Math.max(1, Number(c.verversMinuten) || 10) * 60 * 1000,
+    venster: c.schermAan && c.schermAan.van && c.schermAan.tot ? c.schermAan : null,
+    handmatigMs: Math.max(1, Number(c.handmatigMinuten) || 15) * 60 * 1000,
   };
+}
+
+/** True when nu (a Date) falls inside {van: 'HH:MM', tot: 'HH:MM'}, Amsterdam time. */
+function binnenVenster(nu, venster) {
+  if (!venster) return true;
+  const hhmm = bronnen.formatTijd(nu);
+  return venster.van <= venster.tot ? hhmm >= venster.van && hhmm < venster.tot : hhmm >= venster.van || hhmm < venster.tot;
 }
 
 function renderDashboard(content, extra = {}) {
@@ -65,7 +78,7 @@ function renderDashboard(content, extra = {}) {
     type: 'Alexa.Presentation.APL.RenderDocument',
     token: TOKEN,
     document: dashboardDocument,
-    datasources: { ds: { ...content, blijf, ...extra } },
+    datasources: { ds: { ...content, blijf, gestart: Date.now(), ...extra } },
   };
 }
 
@@ -74,6 +87,7 @@ function buildSkill(deps = {}) {
   const push = deps.push || bronnen.pushNaarDataStore;
   const credentials = deps.credentials || bronnen.credentials;
   const logger = deps.logger || console;
+  const nu = deps.nu || (() => new Date());
 
   /** Fresh content, pushed to the widget of this user when the skill has its client credentials. */
   async function vernieuw(handlerInput) {
@@ -201,13 +215,21 @@ function buildSkill(deps = {}) {
       }
       if (actie === 'blijf') {
         // Ping from the dashboard while it is on screen. An empty answer keeps the session (and the screen) open;
-        // after verversMinuten the screen is redrawn with fresh data.
-        const { blijf, verversMs } = blijfInstellingen();
+        // after verversMinuten the screen is redrawn with fresh data. Outside schermAan the screen closes once it
+        // has been up handmatigMinuten.
+        const { blijf, verversMs, venster, handmatigMs } = blijfInstellingen();
         if (!blijf) return h.responseBuilder.withShouldEndSession(true).getResponse();
-        const sinds = Date.parse((h.requestEnvelope.request.arguments || [])[1] || '');
-        if (Number.isFinite(sinds) && Date.now() - sinds < verversMs) return h.responseBuilder.getResponse();
+        const args = h.requestEnvelope.request.arguments || [];
+        const t0 = nu().getTime();
+        const gestart = Number(args[2]);
+        if (!binnenVenster(nu(), venster) && Number.isFinite(gestart) && t0 - gestart >= handmatigMs) {
+          return h.responseBuilder.withShouldEndSession(true).getResponse();
+        }
+        const sinds = Date.parse(args[1] || '');
+        if (Number.isFinite(sinds) && t0 - sinds < verversMs) return h.responseBuilder.getResponse();
         const content = await verzamel();
-        return h.responseBuilder.addDirective(renderDashboard(content)).getResponse();
+        const extra = Number.isFinite(gestart) ? { gestart } : {};
+        return h.responseBuilder.addDirective(renderDashboard(content, extra)).getResponse();
       }
       logger.log('Onbekende tik', JSON.stringify(h.requestEnvelope.request.arguments || []));
       return h.responseBuilder.speak(s.fallback).getResponse();

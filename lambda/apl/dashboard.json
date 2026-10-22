@@ -50,7 +50,7 @@
             "when": "${payload.ds.blijf == true}",
             "minimumDelay": 25000,
             "commands": [
-              { "type": "SendEvent", "sequencer": "blijf", "arguments": ["blijf", "${payload.ds.bijgewerkt}"] }
+              { "type": "SendEvent", "sequencer": "blijf", "arguments": ["blijf", "${payload.ds.bijgewerkt}", "${payload.ds.gestart}"] }
             ]
           }
         ],
@@ -307,13 +307,14 @@
                         {
                           "type": "Text",
                           "display": "${d.aantalAgenda > 0 || d.aantalTaken > 0 ? 'none' : 'normal'}",
-                          "text": "Geen afspraken of taken.",
+                          "text": "${d.aantalTaken == null ? 'Afspraken en taken komen van de Mac.' : 'Geen afspraken of taken vandaag en morgen.'}",
                           "fontSize": 18,
                           "color": "@inkt2",
                           "paddingTop": 8
                         },
                         {
                           "type": "Container",
+                          "display": "${d.aantalAgenda > 0 ? 'normal' : 'none'}",
                           "data": "${d.agenda}",
                           "items": [
                             {
@@ -350,6 +351,7 @@
                         },
                         {
                           "type": "Container",
+                          "display": "${d.aantalTaken > 0 ? 'normal' : 'none'}",
                           "data": "${d.taken}",
                           "items": [
                             {
@@ -408,6 +410,7 @@
                         },
                         {
                           "type": "Container",
+                          "display": "${d.claude && d.claude.lijst && d.claude.lijst.length > 0 ? 'normal' : 'none'}",
                           "data": "${d.claude.lijst}",
                           "items": [
                             {

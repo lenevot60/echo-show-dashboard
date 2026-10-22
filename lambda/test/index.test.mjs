@@ -195,3 +195,32 @@ test('the full screen reads the data store as md and falls back to what the skil
   const d = doc.mainTemplate.items[0].bind.find((b) => b.name === 'd')
   assert.match(d.value, /md\.ts > payload\.ds\.ts - 1800000 \? md : payload\.ds/)
 })
+
+test('outside schermAan the screen closes once it has been up handmatigMinuten; inside it stays', async () => {
+  const fs = require('node:fs')
+  const path = require('node:path')
+  const { fileURLToPath } = require('node:url')
+  const cfg = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'config.json'), 'utf8'))
+  assert.deepEqual(cfg.schermAan, { van: '06:00', tot: '10:00' })
+  const ping = (nu, minutenOpen) => {
+    const { skill } = maak({ nu: () => nu })
+    const gestart = String(nu.getTime() - minutenOpen * 60000)
+    return skill.invoke(envelope({ type: 'Alexa.Presentation.APL.UserEvent', token: 'dashboard', arguments: ['blijf', nu.toISOString(), gestart] }))
+  }
+  // 22 Oct is still summer time: 05:30Z is 07:30 in Amsterdam, 12:00Z is 14:00.
+  const binnen = await ping(new Date('2026-10-22T05:30:00Z'), 90)
+  assert.equal(binnen.response.shouldEndSession, undefined)
+  const buitenLang = await ping(new Date('2026-10-22T12:00:00Z'), 20)
+  assert.equal(buitenLang.response.shouldEndSession, true)
+  const buitenKort = await ping(new Date('2026-10-22T12:00:00Z'), 5)
+  assert.equal(buitenKort.response.shouldEndSession, undefined)
+})
+
+test('a redraw keeps the original opening time, so the window rule still applies afterwards', async () => {
+  const nu = new Date('2026-10-22T05:30:00Z')
+  const { skill } = maak({ nu: () => nu })
+  const res = await skill.invoke(envelope({ type: 'Alexa.Presentation.APL.UserEvent', token: 'dashboard', arguments: ['blijf', '2026-01-01T00:00:00Z', '1792640000000'] }))
+  assert.equal(directive(res).datasources.ds.gestart, 1792640000000)
+  const doc = JSON.parse(require('node:fs').readFileSync(new URL('../apl/dashboard.json', import.meta.url), 'utf8'))
+  assert.deepEqual(doc.mainTemplate.items[0].handleTick[0].commands[0].arguments, ['blijf', '${payload.ds.bijgewerkt}', '${payload.ds.gestart}'])
+})
