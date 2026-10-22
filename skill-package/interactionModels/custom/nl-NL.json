@@ -64,6 +64,32 @@
             "geef mijn gebruikers id",
             "toon de push id"
           ]
+        },
+        {
+          "name": "OpenYouTubeIntent",
+          "slots": [],
+          "samples": [
+            "open youtube",
+            "start youtube",
+            "toon youtube",
+            "youtube"
+          ]
+        },
+        {
+          "name": "SearchVideoIntent",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "zoek naar {query}",
+            "zoek op youtube naar {query}",
+            "zoek {query}",
+            "zoek video's van {query}",
+            "vind {query}"
+          ]
         }
       ],
       "types": []

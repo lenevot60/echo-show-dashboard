@@ -6,6 +6,7 @@
 const Alexa = require('ask-sdk-core');
 const bronnen = require('./bronnen');
 const { gistOpslag } = require('./opslag');
+const youtube = require('./youtube');
 const dashboardDocument = require('./apl/dashboard.json');
 
 const TOKEN = 'dashboard';
@@ -22,6 +23,8 @@ const TEKST = {
     fout: 'Er ging iets mis. Probeer het nog eens.',
     geenScherm: 'Dit dashboard werkt op een Echo met scherm.',
     kaartTitel: 'Gebruikers-id voor tools/push.mjs',
+    geenHtml: 'Dit toestel kan YouTube niet over het hele scherm openen vanuit een skill.',
+    geenYouTube: 'YouTube is nog niet ingesteld. Zet youtubeKey in credentials punt json en youtubeUrl in config punt json.',
   },
   en: {
     hier: 'Here is your dashboard.',
@@ -35,6 +38,8 @@ const TEKST = {
     fout: 'Something went wrong. Please try again.',
     geenScherm: 'This dashboard works on an Echo with a screen.',
     kaartTitel: 'User id for tools/push.mjs',
+    geenHtml: 'This device cannot open YouTube full screen from a skill.',
+    geenYouTube: 'YouTube is not set up yet. Put youtubeKey in credentials dot json and youtubeUrl in config dot json.',
   },
 };
 
@@ -45,6 +50,11 @@ function t(handlerInput) {
 
 function heeftApl(handlerInput) {
   return Boolean(Alexa.getSupportedInterfaces(handlerInput.requestEnvelope)['Alexa.Presentation.APL']);
+}
+
+/** Web apps in a skill (Alexa Web API for Games): YouTube full screen needs this interface. */
+function heeftHtml(handlerInput) {
+  return Boolean(Alexa.getSupportedInterfaces(handlerInput.requestEnvelope)['Alexa.Presentation.HTML']);
 }
 
 function userId(handlerInput) {
@@ -89,6 +99,7 @@ function buildSkill(deps = {}) {
   const credentials = deps.credentials || bronnen.credentials;
   const logger = deps.logger || console;
   const nu = deps.nu || (() => new Date());
+  const youtubeDeps = { sleutel: youtube.sleutel, populair: youtube.populair, zoek: youtube.zoek, ...(deps.youtube || {}) };
   const opslag = deps.opslag !== undefined ? deps.opslag : gistOpslag({ ...bronnen.macBron(), fetchImpl: bronnen.fetchImplStandaard });
 
   /** Fields only the Mac knows; the Mac puts them, encrypted, in a secret gist (see opslag.js). */
@@ -172,6 +183,64 @@ function buildSkill(deps = {}) {
     },
   };
 
+  /**
+   * YouTube full screen: start the web app (web/youtube/index.html) with a first list, or, when it is already on
+   * screen in this session, send it the new list. The ASK SDK has no types for Alexa.Presentation.HTML, so the
+   * directives are plain objects.
+   */
+  async function toonYouTube(h, { zoekterm = '', categorie = '' } = {}) {
+    const s = t(h);
+    const url = bronnen.config().youtubeUrl;
+    if (!heeftHtml(h)) {
+      logger.log('Geen Alexa.Presentation.HTML op dit toestel', JSON.stringify(Alexa.getSupportedInterfaces(h.requestEnvelope)));
+      return h.responseBuilder.speak(s.geenHtml).getResponse();
+    }
+    if (!url || !youtubeDeps.sleutel()) return h.responseBuilder.speak(s.geenYouTube).getResponse();
+    let lijst;
+    try {
+      lijst = zoekterm ? await youtubeDeps.zoek(zoekterm) : await youtubeDeps.populair({ categorie });
+    } catch (e) {
+      logger.error('YouTube-lijst niet opgehaald', e);
+      lijst = { titel: 'YouTube', items: [], fout: String(e && e.message ? e.message : e) };
+    }
+    const sessie = h.attributesManager.getSessionAttributes();
+    if (sessie.youtube) {
+      return h.responseBuilder.addDirective({ type: 'Alexa.Presentation.HTML.HandleMessage', message: { type: 'lijst', lijst } }).getResponse();
+    }
+    sessie.youtube = true;
+    h.attributesManager.setSessionAttributes(sessie);
+    return h.responseBuilder
+      .addDirective({
+        type: 'Alexa.Presentation.HTML.Start',
+        data: { lijst, categorieen: youtube.CATEGORIEEN },
+        request: { uri: url, method: 'GET' },
+        configuration: { timeoutInSeconds: 300 },
+      })
+      .getResponse();
+  }
+
+  const OpenYouTubeHandler = {
+    canHandle: (h) => isIntent(h, 'OpenYouTubeIntent'),
+    handle: (h) => toonYouTube(h),
+  };
+
+  const ZoekVideoHandler = {
+    canHandle: (h) => isIntent(h, 'SearchVideoIntent'),
+    handle: (h) => toonYouTube(h, { zoekterm: Alexa.getSlotValue(h.requestEnvelope, 'query') || '' }),
+  };
+
+  /** Messages from the YouTube web app: a search or a category, or a ping that keeps the session open. */
+  const YouTubeBerichtHandler = {
+    canHandle: (h) => isType(h, 'Alexa.Presentation.HTML.Message'),
+    async handle(h) {
+      const m = h.requestEnvelope.request.message || {};
+      if (m.type === 'zoek') return toonYouTube(h, { zoekterm: m.zoekterm || '' });
+      if (m.type === 'categorie') return toonYouTube(h, { categorie: m.categorie || '' });
+      if (m.type !== 'blijf') logger.log('Onbekend bericht van YouTube', JSON.stringify(m));
+      return h.responseBuilder.getResponse();
+    },
+  };
+
   const ToonIdHandler = {
     canHandle: (h) => isIntent(h, 'ShowUserIdIntent'),
     async handle(h) {
@@ -225,6 +294,7 @@ function buildSkill(deps = {}) {
     async handle(h) {
       const s = t(h);
       const actie = (h.requestEnvelope.request.arguments || [])[0];
+      if (actie === 'openYouTube') return toonYouTube(h);
       if (actie === 'openDashboard') {
         const content = await inhoud(h);
         return h.responseBuilder.addDirective(renderDashboard(content)).getResponse();
@@ -290,6 +360,9 @@ function buildSkill(deps = {}) {
       ToonDashboardHandler,
       VerversHandler,
       OpenWebHandler,
+      OpenYouTubeHandler,
+      ZoekVideoHandler,
+      YouTubeBerichtHandler,
       ToonIdHandler,
       WidgetGeinstalleerdHandler,
       WidgetVerwijderdHandler,

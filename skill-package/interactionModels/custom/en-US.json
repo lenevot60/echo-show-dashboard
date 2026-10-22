@@ -59,6 +59,34 @@
             "what is my user id",
             "show the push id"
           ]
+        },
+        {
+          "name": "OpenYouTubeIntent",
+          "slots": [],
+          "samples": [
+            "open youtube",
+            "start youtube",
+            "show youtube",
+            "youtube",
+            "open you tube"
+          ]
+        },
+        {
+          "name": "SearchVideoIntent",
+          "slots": [
+            {
+              "name": "query",
+              "type": "AMAZON.SearchQuery"
+            }
+          ],
+          "samples": [
+            "search for {query}",
+            "search youtube for {query}",
+            "find {query}",
+            "find videos of {query}",
+            "look up {query}",
+            "search {query}"
+          ]
         }
       ],
       "types": []

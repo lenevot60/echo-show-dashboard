@@ -7,15 +7,16 @@ const { buildSkill } = require('../index.js')
 const stil = { log() {}, error() {} }
 const content = { titel: 'Thuis', bijgewerktTekst: '20:05', weer: null, items: [], aantalItems: 0, web: { url: 'https://voorbeeld.nl/dash', titel: 'Web' }, fout: null }
 
-function envelope(request, { apl = true, locale = 'nl-NL' } = {}) {
+function envelope(request, { apl = true, html = false, locale = 'nl-NL', attributes } = {}) {
+  const supportedInterfaces = { ...(apl ? { 'Alexa.Presentation.APL': {} } : {}), ...(html ? { 'Alexa.Presentation.HTML': {} } : {}) }
   return {
     version: '1.0',
-    session: { new: true, sessionId: 's', application: { applicationId: 'a' }, user: { userId: 'amzn1.ask.account.TEST' } },
+    session: { new: true, sessionId: 's', application: { applicationId: 'a' }, user: { userId: 'amzn1.ask.account.TEST' }, ...(attributes ? { attributes } : {}) },
     context: {
       System: {
         application: { applicationId: 'a' },
         user: { userId: 'amzn1.ask.account.TEST' },
-        device: { deviceId: 'amzn1.ask.device.D', supportedInterfaces: apl ? { 'Alexa.Presentation.APL': {} } : {} },
+        device: { deviceId: 'amzn1.ask.device.D', supportedInterfaces },
         apiEndpoint: 'https://api.eu.amazonalexa.com',
       },
     },
@@ -139,7 +140,16 @@ test('every JSON in the skill package parses and the widget binds the data store
   const lees = (p) => JSON.parse(fs.readFileSync(path.join(root, p), 'utf8'))
   const skill = lees('skill-package/skill.json')
   const pm = skill.manifest.apis.custom.interfaces.find((i) => i.type === 'ALEXA_DATASTORE_PACKAGEMANAGER')
-  assert.deepEqual(pm.packages, [{ id: 'dashboard-widget' }])
+  assert.deepEqual(pm.packages, [{ id: 'dashboard-widget' }, { id: 'youtube-widget' }])
+  assert.ok(skill.manifest.apis.custom.interfaces.some((i) => i.type === 'ALEXA_PRESENTATION_HTML'))
+  const yt = lees('skill-package/dataStorePackages/youtube-widget/documents/document.json')
+  assert.deepEqual(yt.mainTemplate.items[0].onPress[0], { type: 'SendEvent', arguments: ['openYouTube'], flags: { interactionMode: 'STANDARD' } })
+  assert.equal(lees('skill-package/dataStorePackages/youtube-widget/manifest.json').manifest.id, 'youtube-widget')
+  for (const l of ['nl-NL', 'en-GB', 'en-US']) {
+    const intents = lees(`skill-package/interactionModels/custom/${l}.json`).interactionModel.languageModel.intents
+    assert.equal(intents.find((i) => i.name === 'SearchVideoIntent').slots[0].type, 'AMAZON.SearchQuery')
+    assert.ok(intents.some((i) => i.name === 'OpenYouTubeIntent'))
+  }
   const manifest = lees('skill-package/dataStorePackages/dashboard-widget/manifest.json')
   assert.equal(manifest.manifest.id, 'dashboard-widget')
   assert.equal(manifest.publishingInformation.locales['nl-NL'][0].targetViewport, 'WIDGET_M')
@@ -244,4 +254,73 @@ test('Mac data older than 30 minutes is left out, and a failing gist does not br
   const kapot = maak({ opslag: { lees: async () => { throw new Error('Gist 500') } }, nu: () => nu })
   const ds = directive(await kapot.skill.invoke(envelope({ type: 'LaunchRequest' }))).datasources.ds
   assert.equal(ds.titel, 'Thuis')
+})
+
+const lijst = { titel: 'Populair in Nederland', categorie: '', items: [{ id: 'abc', titel: 'Video', kanaal: 'Kanaal', thumb: 'https://i/t.jpg', duur: '3:15' }] }
+function metYouTube(extra = {}) {
+  const vragen = []
+  const { skill } = maak({
+    youtube: {
+      sleutel: () => 'SLEUTEL',
+      populair: async (o) => { vragen.push(['populair', o.categorie]); return lijst },
+      zoek: async (q) => { vragen.push(['zoek', q]); return { ...lijst, titel: `Resultaten voor “${q}”`, zoekterm: q } },
+      ...extra,
+    },
+  })
+  return { skill, vragen }
+}
+const htmlDirective = (res, type) => res.response.directives?.find((d) => d.type === type)
+
+test('a tap on the YouTube widget starts the web app full screen with the popular list', async () => {
+  const { skill, vragen } = metYouTube()
+  const res = await skill.invoke(envelope({ type: 'Alexa.Presentation.APL.UserEvent', arguments: ['openYouTube'] }, { html: true }))
+  const d = htmlDirective(res, 'Alexa.Presentation.HTML.Start')
+  assert.ok(d)
+  assert.match(d.request.uri, /^https:\/\/.+\/youtube\/$/)
+  assert.equal(d.request.method, 'GET')
+  assert.equal(d.configuration.timeoutInSeconds, 300)
+  assert.equal(d.data.lijst.items[0].id, 'abc')
+  assert.ok(d.data.categorieen.length > 1)
+  assert.deepEqual(vragen, [['populair', '']])
+  assert.equal(res.response.shouldEndSession, undefined)
+  assert.equal(res.sessionAttributes.youtube, true)
+})
+
+test('a device without web apps hears why instead of getting a directive it cannot run', async () => {
+  const { skill } = metYouTube()
+  const res = await skill.invoke(envelope({ type: 'IntentRequest', intent: { name: 'OpenYouTubeIntent' } }, { html: false }))
+  assert.match(res.response.outputSpeech.ssml, /niet over het hele scherm/)
+  assert.equal(htmlDirective(res, 'Alexa.Presentation.HTML.Start'), undefined)
+})
+
+test('a spoken search while YouTube is on screen sends the results to the page instead of restarting it', async () => {
+  const { skill, vragen } = metYouTube()
+  const intent = { name: 'SearchVideoIntent', slots: { query: { name: 'query', value: 'katten' } } }
+  const res = await skill.invoke(envelope({ type: 'IntentRequest', intent }, { html: true, attributes: { youtube: true } }))
+  assert.equal(htmlDirective(res, 'Alexa.Presentation.HTML.Start'), undefined)
+  const m = htmlDirective(res, 'Alexa.Presentation.HTML.HandleMessage')
+  assert.equal(m.message.type, 'lijst')
+  assert.equal(m.message.lijst.zoekterm, 'katten')
+  assert.deepEqual(vragen, [['zoek', 'katten']])
+})
+
+test('messages from the page: search, category and a silent keep-alive ping', async () => {
+  const { skill, vragen } = metYouTube()
+  const bericht = (message) => skill.invoke(envelope({ type: 'Alexa.Presentation.HTML.Message', message }, { html: true, attributes: { youtube: true } }))
+  const zoek = await bericht({ type: 'zoek', zoekterm: 'treinen' })
+  assert.equal(htmlDirective(zoek, 'Alexa.Presentation.HTML.HandleMessage').message.lijst.zoekterm, 'treinen')
+  await bericht({ type: 'categorie', categorie: '10' })
+  const ping = await bericht({ type: 'blijf' })
+  assert.equal(ping.response.directives, undefined)
+  assert.equal(ping.response.outputSpeech, undefined)
+  assert.equal(ping.response.shouldEndSession, undefined)
+  assert.deepEqual(vragen, [['zoek', 'treinen'], ['populair', '10']])
+})
+
+test('a failing YouTube call still opens the page, with the error in the list', async () => {
+  const { skill } = metYouTube({ populair: async () => { throw new Error('YouTube 403 quotaExceeded') } })
+  const res = await skill.invoke(envelope({ type: 'IntentRequest', intent: { name: 'OpenYouTubeIntent' } }, { html: true }))
+  const d = htmlDirective(res, 'Alexa.Presentation.HTML.Start')
+  assert.deepEqual(d.data.lijst.items, [])
+  assert.match(d.data.lijst.fout, /quotaExceeded/)
 })

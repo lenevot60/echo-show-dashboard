@@ -1,7 +1,7 @@
 {
   "manifest": {
     "id": "youtube-widget",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "installStateChanges": "INFORM",
     "updateStateChanges": "INFORM",
     "presentationDefinitions": [
@@ -21,7 +21,7 @@
           "targetViewport": "WIDGET_M",
           "metadata": {
             "name": "YouTube",
-            "description": "Eén tik opent YouTube in de browser van je Echo Show.",
+            "description": "Eén tik opent YouTube over het hele scherm: populair, categorieën en zoeken.",
             "keywords": [
               "youtube",
               "video"
@@ -38,7 +38,7 @@
           "targetViewport": "WIDGET_M",
           "metadata": {
             "name": "YouTube",
-            "description": "One tap opens YouTube in the browser of your Echo Show.",
+            "description": "One tap opens YouTube full screen: popular, categories and search.",
             "keywords": [
               "youtube",
               "video"
@@ -55,7 +55,7 @@
           "targetViewport": "WIDGET_M",
           "metadata": {
             "name": "YouTube",
-            "description": "One tap opens YouTube in the browser of your Echo Show.",
+            "description": "One tap opens YouTube full screen: popular, categories and search.",
             "keywords": [
               "youtube",
               "video"

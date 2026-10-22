@@ -1,7 +1,7 @@
 {
   "type": "APL",
   "version": "2024.3",
-  "description": "Widget (WIDGET_M): a YouTube tile. A tap opens YouTube in the device browser with OpenURL. When the device does not allow opening URLs (environment.allowOpenURL false) or the browser fails, the tile says so instead of doing nothing.",
+  "description": "Widget (WIDGET_M): a YouTube tile. A tap asks the skill (SendEvent openYouTube, STANDARD) to start the YouTube web app full screen (Alexa.Presentation.HTML, web/youtube/index.html).",
   "graphics": {
     "logo": {
       "type": "AVG",
@@ -34,16 +34,13 @@
         "accessibilityLabel": "Open YouTube",
         "onPress": [
           {
-            "type": "OpenURL",
-            "source": "${payload.youtube.url}",
-            "onFail": [
-              {
-                "type": "SetValue",
-                "componentId": "melding",
-                "property": "text",
-                "value": "YouTube kon niet worden geopend (fout ${event.source.value}). Zeg: Alexa, open YouTube."
-              }
-            ]
+            "type": "SendEvent",
+            "arguments": [
+              "openYouTube"
+            ],
+            "flags": {
+              "interactionMode": "STANDARD"
+            }
           }
         ],
         "item": {
@@ -79,18 +76,6 @@
                 "fontSize": 15,
                 "color": "#AAAAAA",
                 "paddingTop": 6
-              },
-              {
-                "type": "Text",
-                "id": "melding",
-                "width": "100%",
-                "text": "${environment.allowOpenURL == false ? 'Dit toestel opent geen websites vanuit een widget. Zeg: Alexa, open YouTube.' : ''}",
-                "fontSize": 14,
-                "color": "#FFC531",
-                "textAlign": "center",
-                "paddingTop": 20,
-                "paddingLeft": 16,
-                "paddingRight": 16
               }
             ]
           }

@@ -35,5 +35,7 @@
   "takenLijsten": [],
   "takenBereik": "vandaag-morgen",
   "_takenBereik": "vandaag-morgen: alleen herinneringen met een datum vandaag of morgen. alles: ook te laat, gemarkeerd en hoge prioriteit.",
-  "_takenLijsten": "Namen van lijsten in Apple Herinneringen; leeg = alle lijsten. Getoond: te laat en vandaag eerst, dan gemarkeerd."
+  "_takenLijsten": "Namen van lijsten in Apple Herinneringen; leeg = alle lijsten. Getoond: te laat en vandaag eerst, dan gemarkeerd.",
+  "youtubeUrl": "https://lenevot60.github.io/echo-show-dashboard/youtube/",
+  "_youtubeUrl": "Adres van web/youtube/index.html (GitHub Pages, tak gh-pages). De skill start die pagina over het hele scherm; de YouTube-sleutel (youtubeKey) staat in credentials.json."
 }

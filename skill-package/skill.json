@@ -166,6 +166,9 @@
                 "uri": "alexaext:datastore:10"
               }
             ]
+          },
+          {
+            "type": "ALEXA_PRESENTATION_HTML"
           }
         ],
         "locales": {}
