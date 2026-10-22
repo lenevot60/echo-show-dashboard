@@ -120,6 +120,7 @@
               "marginTop": 10,
               "item": {
                 "type": "Container",
+                "width": "100%",
                 "items": [
                   {
                     "type": "Container",

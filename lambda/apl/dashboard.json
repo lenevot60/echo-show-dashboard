@@ -158,6 +158,7 @@
                       "paddingBottom": 14,
                       "item": {
                         "type": "Container",
+                        "width": "100%",
                         "items": [
                           {
                             "type": "Container",
@@ -203,8 +204,7 @@
               { "type": "Container", "width": 22 },
               {
                 "type": "Container",
-                "grow": 1,
-                "shrink": 1,
+                "width": "${viewport.width - 80 - 22 - zijde}",
                 "height": "${zijde}",
                 "items": [
                   {
@@ -213,6 +213,7 @@
                     "borderRadius": 22,
                     "item": {
                       "type": "Container",
+                      "width": "100%",
                       "paddingLeft": 22,
                       "paddingRight": 22,
                       "paddingTop": 16,
@@ -295,6 +296,7 @@
                     "borderRadius": 22,
                     "item": {
                       "type": "Container",
+                      "width": "100%",
                       "height": "100%",
                       "paddingLeft": 22,
                       "paddingRight": 22,
@@ -374,6 +376,7 @@
                     "borderRadius": 22,
                     "item": {
                       "type": "Container",
+                      "width": "100%",
                       "paddingLeft": 22,
                       "paddingRight": 22,
                       "paddingTop": 16,
