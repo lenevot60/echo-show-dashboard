@@ -60,6 +60,13 @@ twee apparaten met Data Store-ondersteuning "The device does not have any packag
 dus nog niet op de Echo Show 11; oorzaak onbekend (taal van het toestel, slaapstand, of dev-widgets op Vega OS).
 Controleer op het toestel de Widget Gallery en de taalinstelling.
 
+Scherm blijft staan (22 oktober): het dashboard sloot na een seconde omdat de skill de sessie direct beëindigde. Nu
+blijft de sessie open (geen `shouldEndSession`), vraagt het document twee minuten `idleTimeout`, en stuurt het scherm
+elke 25 seconden een seintje (`handleTick` met een eigen `sequencer`, want tick-handlers draaien in fast mode en slaan
+een kale SendEvent over). Na `verversMinuten` tekent de skill het scherm opnieuw met verse gegevens. Uitzetten:
+`blijfOpScherm: false` in `lambda/config.json`. Bestanden in de console zetten: `node tools/console/zet-bestand.mjs
+<paden> --deploy`; controleren: `node tools/console/manual-json.mjs launch en-US`.
+
 Let op bij een import in de console: de aanroepnaam uit `interactionModels/custom/nl-NL.json` komt niet mee. Zet het
 model daarna via Build, Interaction Model, JSON Editor, dan Save en Build skill.
 
