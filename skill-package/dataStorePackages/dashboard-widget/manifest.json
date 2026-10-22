@@ -21,11 +21,12 @@
           "targetViewport": "WIDGET_M",
           "metadata": {
             "name": "Mijn dashboard",
-            "description": "Weer, je notities en een tegel naar je eigen webdashboard. Gegevens van je eigen backend.",
+            "description": "Reistijd naar werk, weer en regen, je afspraken, taken en lopende Claude-chats. Gevuld vanaf je eigen Mac.",
             "keywords": [
               "dashboard",
+              "reistijd",
               "weer",
-              "notities"
+              "agenda"
             ],
             "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/icon-450.png",
             "previews": [
@@ -39,11 +40,12 @@
           "targetViewport": "WIDGET_M",
           "metadata": {
             "name": "My dashboard",
-            "description": "Weather, your notes and a tile to your own web dashboard. Data from your own backend.",
+            "description": "Travel time to work, weather and rain, your appointments, tasks and running Claude sessions. Filled from your own Mac.",
             "keywords": [
               "dashboard",
+              "commute",
               "weather",
-              "notes"
+              "agenda"
             ],
             "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/icon-450.png",
             "previews": [
@@ -57,11 +59,12 @@
           "targetViewport": "WIDGET_M",
           "metadata": {
             "name": "My dashboard",
-            "description": "Weather, your notes and a tile to your own web dashboard. Data from your own backend.",
+            "description": "Travel time to work, weather and rain, your appointments, tasks and running Claude sessions. Filled from your own Mac.",
             "keywords": [
               "dashboard",
+              "commute",
               "weather",
-              "notes"
+              "agenda"
             ],
             "iconUri": "https://raw.githubusercontent.com/lenevot60/echo-show-dashboard/main/assets/icon-450.png",
             "previews": [
