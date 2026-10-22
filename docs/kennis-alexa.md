@@ -58,6 +58,26 @@ staat er als *onbevestigd* bij.
 - Een widget opent het volledige scherm met `SendEvent` en `flags.interactionMode: "STANDARD"` (`INLINE` laat de
   widget staan). Maak de hele widget één `TouchWrapper`, dan werkt een tik ook zonder gegevens.
 
+## YouTube over het hele scherm (Web API for Games)
+
+- Een eigen app of emulator kan niet op Vega OS. Wel kan een skill een eigen webpagina over het hele scherm starten met
+  `Alexa.Presentation.HTML.Start` (interface "Alexa Web API for Games" aanzetten onder Build > Interfaces, dan bouwen).
+  Amazon noemt "Echo Show devices" zonder modellijst; of de Show 11 het ondersteunt is *onbevestigd* tot de test op het
+  toestel. Zonder ondersteuning ontbreekt `Alexa.Presentation.HTML` in `supportedInterfaces` en zegt de skill dat.
+- Start: `request.uri` (HTTPS), `method: GET`, `configuration.timeoutInSeconds` hooguit 300 (zonder interactie),
+  `data` hooguit 24 KB. Berichten: skill → pagina `Alexa.Presentation.HTML.HandleMessage`, pagina → skill request
+  `Alexa.Presentation.HTML.Message`. De ASK SDK kent ze niet: gewone objecten. Automatisch afspelen mag; local storage,
+  `alert()` en de camera niet.
+- De pagina staat op GitHub Pages (tak gh-pages, `tools/pages.sh`): https://lenevot60.github.io/echo-show-dashboard/youtube/.
+  De YouTube Data API-sleutel (project DHPS, "Echo Show YouTube", alleen YouTube Data API v3) staat alleen in
+  `lambda/credentials.json` en `.env`; de skill zoekt, de pagina krijgt alleen lijsten. Quotum 10.000 per dag:
+  populair 1, zoeken 101.
+- De officiële IFrame-speler speelt vanaf github.io gewoon af (getest 22-10 in Chrome); video's die insluiten
+  verbieden filtert de zoekopdracht weg (`videoEmbeddable=true`) of de pagina meldt fout 101/150.
+- De pagina stuurt elke 60 s een `blijf`-bericht om de 300 s-grens voor te blijven; of dat de sessie tijdens een lange
+  video openhoudt, is *onbevestigd*.
+- Een tweede widget toevoegen: zie hieronder. De YouTube-widget stuurt `SendEvent openYouTube` (STANDARD).
+
 ## Gegevens van de Mac naar de skill
 
 - **Data Store REST API**: token via Login with Amazon, `client_credentials`, scope `alexa::datastore`, EU-endpoint
