@@ -53,6 +53,8 @@ staat er als *onbevestigd* bij.
   "Device does not support Alexa.DataStore" en 2 "The device does not have any package from this skill", ook na
   installeren en toevoegen op het startscherm. De knop "Update Data Store" in de widgeteditor meldt wel succes.
   Conclusie (deels *onbevestigd*): de Echo Show 11 op Vega OS krijgt via de REST API geen widgetgegevens.
+- **Tweede widget in dezelfde skill** (22-10, YouTube): Multimodal Responses > Widget > Create Widget > Upload (neemt alleen het APL-document als .json), daarna DATA en MANIFEST plakken, opslaan met als naam de manifest-id, Build skill, Install + Send to Device. Het consolesjabloon zet `location == 'FAVORITE'` in `appliesTo`; wij laten dat weg.
+- `OpenURL` staat in Amazons commandotabel als toegestaan in widgets. Op een toestel zonder ondersteuning wordt het stil genegeerd, zonder `onFail`; daarom toont de YouTube-widget een melding als `environment.allowOpenURL` false is. Of de Show 11 YouTube zo opent, is *onbevestigd*.
 - Een widget opent het volledige scherm met `SendEvent` en `flags.interactionMode: "STANDARD"` (`INLINE` laat de
   widget staan). Maak de hele widget één `TouchWrapper`, dan werkt een tik ook zonder gegevens.
 
