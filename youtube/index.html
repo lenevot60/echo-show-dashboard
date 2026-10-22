@@ -5,9 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <title>YouTube</title>
 <!--
-  YouTube full screen on the Echo Show 11. The skill starts this page as a web app (Alexa.Presentation.HTML.Start)
-  with a first list in `data`; searches and categories go to the skill (alexa.skill.sendMessage), which asks the
-  YouTube Data API and answers with a new list. Videos play in the official YouTube IFrame player.
+  YouTube in the tablet layout, full screen on the Echo Show 11. The skill starts this page as a web app
+  (Alexa.Presentation.HTML.Start) with the first list in `data`; every list after that is asked from the skill with
+  alexa.skill.sendMessage and comes back as a message carrying the same request number. The skill holds the YouTube
+  Data API key and, when the account is linked, the user's token. Videos play in the official YouTube IFrame player.
 -->
 <style>
   :root {
@@ -18,91 +19,250 @@
     --tekst2: #aaaaaa;
     --rood: #ff0033;
     --rand: #303030;
+    --rail: 80px;
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { background: #0f0f0f; }
   html, body { margin: 0; height: 100%; background: var(--achter); color: var(--tekst); font-family: Roboto, Arial, sans-serif; overflow: hidden; user-select: none; }
-  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; padding: 0; }
+  svg.i { width: 24px; height: 24px; fill: currentColor; flex: none; }
+  [hidden] { display: none !important; }
 
-  #app { display: flex; flex-direction: column; height: 100%; }
-  header { display: flex; align-items: center; gap: 24px; padding: 14px 28px; }
-  .logo { display: flex; align-items: center; gap: 6px; font-size: 26px; font-weight: 700; letter-spacing: -1px; flex: none; }
-  .logo svg { width: 46px; height: 32px; }
-  form { flex: 1; display: flex; max-width: 760px; margin: 0 auto; }
-  #zoekveld { flex: 1; min-width: 0; height: 52px; padding: 0 22px; font: 400 20px Roboto, Arial, sans-serif; color: var(--tekst); background: #121212; border: 1px solid var(--rand); border-right: 0; border-radius: 26px 0 0 26px; outline: none; user-select: text; }
+  #app { display: flex; height: 100%; }
+  #rail { width: var(--rail); flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; padding-top: 72px; }
+  .tab { width: 72px; padding: 14px 0 10px; border-radius: 10px; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11px; }
+  .tab svg.i { width: 26px; height: 26px; }
+  .tab.actief { background: var(--vlak); }
+  .tab:active { background: var(--vlak2); }
+
+  #hoofd { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  #balk { height: 64px; flex: none; display: flex; align-items: center; gap: 16px; padding: 0 20px 0 0; }
+  .logo { display: flex; align-items: center; gap: 4px; font-size: 22px; font-weight: 700; letter-spacing: -1px; flex: none; margin-left: -60px; }
+  .logo svg { width: 40px; height: 28px; }
+  #zoek { flex: 1; display: flex; max-width: 640px; margin: 0 auto; }
+  #zoekveld { flex: 1; min-width: 0; height: 46px; padding: 0 20px; font: 400 18px Roboto, Arial, sans-serif; color: var(--tekst); background: #121212; border: 1px solid var(--rand); border-right: 0; border-radius: 23px 0 0 23px; outline: none; user-select: text; }
   #zoekveld:focus { border-color: #1c62b9; }
   #zoekveld::placeholder { color: #888; }
-  form button { width: 78px; height: 52px; background: var(--vlak); border: 1px solid var(--rand); border-radius: 0 26px 26px 0; display: grid; place-items: center; }
-  #mic { width: 52px; height: 52px; border-radius: 50%; background: var(--vlak); display: grid; place-items: center; flex: none; }
+  #zoek button { width: 68px; height: 46px; background: var(--vlak); border: 1px solid var(--rand); border-radius: 0 23px 23px 0; display: grid; place-items: center; }
+  .rond { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  #mic { background: var(--vlak); }
   #mic.aan { background: var(--rood); }
-  header svg.icoon { width: 26px; height: 26px; fill: var(--tekst); }
+  #ik.gekoppeld { color: #3ea6ff; }
 
-  #chips { display: flex; gap: 12px; padding: 4px 28px 14px; overflow-x: auto; scrollbar-width: none; flex: none; }
+  .view { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 24px 40px 4px; }
+  #chips { display: flex; gap: 12px; padding: 4px 0 18px; overflow-x: auto; scrollbar-width: none; }
   #chips::-webkit-scrollbar { display: none; }
-  .chip { flex: none; height: 44px; padding: 0 20px; border-radius: 10px; background: var(--vlak); font-size: 18px; font-weight: 500; }
+  .chip { flex: none; height: 40px; padding: 0 16px; border-radius: 8px; background: var(--vlak); font-size: 16px; font-weight: 500; }
   .chip.actief { background: var(--tekst); color: var(--achter); }
+  .kop { display: flex; align-items: center; gap: 10px; margin: 4px 0 18px; }
+  .kop h1 { margin: 0; font-size: 22px; font-weight: 700; }
+  .kop button { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; }
+  .melding { color: var(--tekst2); font-size: 17px; margin: 0 0 18px; }
+  .melding:empty { display: none; }
 
-  main { flex: 1; overflow-y: auto; padding: 4px 28px 40px; -webkit-overflow-scrolling: touch; }
-  #kop { font-size: 22px; font-weight: 700; margin: 4px 0 16px; }
-  #melding { color: var(--tekst2); font-size: 18px; margin: 0 0 16px; }
-  #melding:empty { display: none; }
-  #melding.koppel { color: var(--tekst); background: var(--vlak); border-radius: 12px; padding: 18px 22px; max-width: 760px; line-height: 1.5; }
-  #raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 28px 18px; transition: opacity .2s; }
-  #raster.laden { opacity: .35; }
-  .kaart { text-align: left; padding: 0; display: block; align-self: start; }
-  .kaart:active .duim img { transform: scale(.97); }
+  .raster { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 32px 16px; }
+  .kaart { text-align: left; display: block; align-self: start; width: 100%; }
   .duim { position: relative; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; background: var(--vlak); }
   .duim img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform .15s; }
-  .duur { position: absolute; right: 8px; bottom: 8px; padding: 2px 6px; border-radius: 6px; background: rgba(0, 0, 0, .8); font-size: 15px; font-weight: 500; }
+  .kaart:active .duim img { transform: scale(.97); }
+  .duur { position: absolute; right: 8px; bottom: 8px; padding: 1px 5px; border-radius: 4px; background: rgba(0, 0, 0, .8); font-size: 13px; font-weight: 500; }
   .duur.live { background: #cc0000; }
   .duur.lijst { left: 0; right: 0; bottom: 0; border-radius: 0; padding: 6px 10px; text-align: right; background: rgba(0, 0, 0, .7); }
-  .kaart h3 { margin: 12px 0 4px; font-size: 18px; font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .kaart p { margin: 0; color: var(--tekst2); font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .onder { display: flex; gap: 12px; margin-top: 12px; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; flex: none; background: var(--vlak2); object-fit: cover; display: grid; place-items: center; font-size: 15px; font-weight: 500; color: var(--tekst); overflow: hidden; }
+  .tekst { min-width: 0; flex: 1; }
+  .tekst h3 { margin: 0 0 4px; font-size: 16px; font-weight: 500; line-height: 1.38; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .tekst p { margin: 0; color: var(--tekst2); font-size: 14px; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-  #laag { position: fixed; inset: 0; background: #000; z-index: 10; }
-  #laag[hidden] { display: none; }
-  #speler, #laag iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
-  #terug { position: absolute; top: 18px; left: 18px; z-index: 11; height: 52px; padding: 0 24px 0 16px; border-radius: 26px; background: rgba(0, 0, 0, .6); font-size: 19px; font-weight: 500; display: flex; align-items: center; gap: 6px; opacity: 1; transition: opacity .6s; }
-  #terug.stil { opacity: .35; }
-  #terug svg { width: 26px; height: 26px; fill: var(--tekst); }
+  .leeg .duim { animation: puls 1.2s ease-in-out infinite alternate; }
+  .leeg .regel { height: 14px; border-radius: 4px; background: var(--vlak); margin: 4px 0 10px; animation: puls 1.2s ease-in-out infinite alternate; }
+  .leeg .regel.kort { width: 60%; }
+  @keyframes puls { from { opacity: .55; } to { opacity: 1; } }
 
-  #toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); max-width: 80%; padding: 14px 22px; border-radius: 10px; background: #e8e8e8; color: #0f0f0f; font-size: 18px; opacity: 0; transition: opacity .2s, transform .2s; z-index: 20; pointer-events: none; }
+  .rij-kop { display: flex; align-items: baseline; justify-content: space-between; margin: 8px 0 14px; }
+  .rij-kop h2 { margin: 0; font-size: 20px; font-weight: 700; }
+  .rij { display: flex; gap: 16px; overflow-x: auto; scrollbar-width: none; padding-bottom: 8px; margin-bottom: 28px; }
+  .rij::-webkit-scrollbar { display: none; }
+  .rij .kaart { flex: none; width: 280px; }
+  .paneel { max-width: 720px; margin: 40px auto; padding: 32px; border-radius: 16px; background: #1a1a1a; text-align: center; }
+  .paneel svg.i { width: 72px; height: 72px; color: var(--tekst2); }
+  .paneel h2 { margin: 12px 0 10px; font-size: 22px; }
+  .paneel p { margin: 0 0 10px; color: var(--tekst2); font-size: 17px; line-height: 1.55; }
+  .paneel ol { text-align: left; color: var(--tekst); font-size: 17px; line-height: 1.7; margin: 16px auto 0; max-width: 520px; }
+
+  /* Watch page: player and details on the left, "Volgende" on the right, like YouTube on a tablet in landscape. */
+  #kijk { position: fixed; inset: 0; z-index: 10; background: var(--achter); display: flex; gap: 20px; padding: 16px 20px 0 20px; }
+  #kijk-links { flex: 1; min-width: 0; overflow-y: auto; padding-bottom: 32px; }
+  #speler-vak { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: calc(100vh - 190px); background: #000; border-radius: 12px; overflow: hidden; }
+  #speler, #speler-vak iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .overlay { position: absolute; z-index: 2; top: 12px; height: 48px; border-radius: 24px; background: rgba(0, 0, 0, .6); display: flex; align-items: center; gap: 6px; transition: opacity .6s; }
+  .overlay.stil { opacity: .3; }
+  #terug { left: 12px; padding: 0 18px 0 12px; font-size: 17px; font-weight: 500; }
+  #vol { right: 12px; width: 48px; justify-content: center; }
+  #kijk.volledig { padding: 0; }
+  #kijk.volledig #speler-vak { position: fixed; inset: 0; max-height: none; aspect-ratio: auto; border-radius: 0; z-index: 12; }
+  #kijk.volledig #info, #kijk.volledig #volgende { display: none; }
+  #info h1 { margin: 14px 0 10px; font-size: 21px; font-weight: 700; line-height: 1.35; }
+  .kanaal-rij { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .kanaal-rij .avatar { width: 42px; height: 42px; }
+  .kanaal-rij b { font-size: 17px; font-weight: 500; }
+  #beschrijving { background: var(--vlak); border-radius: 12px; padding: 12px 14px; font-size: 15px; line-height: 1.5; color: var(--tekst); text-align: left; width: 100%; }
+  #beschrijving .meta { font-weight: 500; margin-bottom: 4px; display: block; }
+  #volgende { width: 380px; flex: none; overflow-y: auto; padding-bottom: 32px; }
+  .vk { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 12px; }
+  .vk h2 { margin: 0; font-size: 18px; font-weight: 700; }
+  .schakel { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--tekst2); }
+  .schakel i { width: 36px; height: 20px; border-radius: 10px; background: var(--vlak2); position: relative; }
+  .schakel i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #ddd; transition: left .15s; }
+  .schakel.aan i { background: #3ea6ff; }
+  .schakel.aan i::after { left: 18px; }
+  .sectie { font-size: 15px; font-weight: 500; color: var(--tekst2); margin: 18px 0 10px; }
+  .klein { display: flex; gap: 10px; text-align: left; width: 100%; margin-bottom: 12px; }
+  .klein .duim { width: 168px; flex: none; border-radius: 8px; }
+  .klein h3 { margin: 0 0 4px; font-size: 15px; font-weight: 500; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .klein p { margin: 0; color: var(--tekst2); font-size: 13px; line-height: 1.4; }
+
+  #toast { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 20px); max-width: 80%; padding: 14px 22px; border-radius: 10px; background: #e8e8e8; color: #0f0f0f; font-size: 17px; opacity: 0; transition: opacity .2s, transform .2s; z-index: 30; pointer-events: none; }
   #toast.zichtbaar { opacity: 1; transform: translate(-50%, 0); }
-  #status { position: fixed; left: 28px; bottom: 16px; padding: 6px 12px; border-radius: 8px; background: rgba(15, 15, 15, .9); font-size: 14px; color: #8a8a8a; z-index: 5; }
+  #status { position: fixed; left: calc(var(--rail) + 8px); bottom: 12px; padding: 6px 12px; border-radius: 8px; background: rgba(15, 15, 15, .9); font-size: 13px; color: #8a8a8a; z-index: 25; }
   #status.weg { display: none; }
+
+  @media (max-width: 860px) {
+    #kijk { flex-direction: column; overflow-y: auto; }
+    #kijk-links, #volgende { overflow: visible; width: auto; }
+  }
 </style>
 </head>
 <body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-start" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></symbol>
+  <symbol id="i-abo" viewBox="0 0 24 24"><path d="M20 8H4V6h16v2zm-2-6H6v2h12V2zm4 10v8c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2v-8c0-1.1.9-2 2-2h16c1.1 0 2 .9 2 2zm-6 4-6-3.27v6.53L16 16z"/></symbol>
+  <symbol id="i-jij" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/></symbol>
+  <symbol id="i-zoek" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5.3-3a5.3 5.3 0 0 1-10.6 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-1.7z"/></symbol>
+  <symbol id="i-ik" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></symbol>
+  <symbol id="i-terug" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></symbol>
+  <symbol id="i-vol" viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></symbol>
+  <symbol id="i-klein" viewBox="0 0 24 24"><path d="M5 16h3v3h2v-5H5v2zm3-8H5v2h5V5H8v3zm6 11h2v-3h3v-2h-5v5zm2-11V5h-2v5h5V8h-3z"/></symbol>
+</svg>
+
 <div id="app">
-  <header>
-    <div class="logo" aria-label="YouTube">
-      <svg viewBox="0 0 160 112" aria-hidden="true"><path fill="#ff0033" d="M28,0 L132,0 Q160,0 160,28 L160,84 Q160,112 132,112 L28,112 Q0,112 0,84 L0,28 Q0,0 28,0 Z"/><path fill="#fff" d="M64,32 L64,80 L106,56 Z"/></svg>
-      <span>YouTube</span>
+  <nav id="rail">
+    <button class="tab actief" data-tab="start"><svg class="i"><use href="#i-start"/></svg>Start</button>
+    <button class="tab" data-tab="abonnementen"><svg class="i"><use href="#i-abo"/></svg>Abonnementen</button>
+    <button class="tab" data-tab="jij"><svg class="i"><use href="#i-jij"/></svg>Jij</button>
+  </nav>
+  <div id="hoofd">
+    <header id="balk">
+      <div class="logo" aria-label="YouTube">
+        <svg viewBox="0 0 160 112" aria-hidden="true"><path fill="#ff0033" d="M28,0 L132,0 Q160,0 160,28 L160,84 Q160,112 132,112 L28,112 Q0,112 0,84 L0,28 Q0,0 28,0 Z"/><path fill="#fff" d="M64,32 L64,80 L106,56 Z"/></svg>
+        <span>YouTube</span>
+      </div>
+      <form id="zoek" autocomplete="off">
+        <input id="zoekveld" type="search" placeholder="Zoeken" enterkeyhint="search" aria-label="Zoeken">
+        <button type="submit" aria-label="Zoeken"><svg class="i"><use href="#i-zoek"/></svg></button>
+      </form>
+      <button id="mic" class="rond" aria-label="Zoeken met je stem"><svg class="i"><use href="#i-mic"/></svg></button>
+      <button id="ik" class="rond" aria-label="Jij"><svg class="i" style="width:32px;height:32px"><use href="#i-ik"/></svg></button>
+    </header>
+
+    <section id="v-start" class="view">
+      <div id="chips"></div>
+      <p class="melding" id="m-start"></p>
+      <div class="raster" id="r-start"></div>
+    </section>
+
+    <section id="v-lijst" class="view" hidden>
+      <div class="kop"><button id="lijst-terug" aria-label="Terug"><svg class="i"><use href="#i-terug"/></svg></button><h1 id="k-lijst"></h1></div>
+      <p class="melding" id="m-lijst"></p>
+      <div class="raster" id="r-lijst"></div>
+    </section>
+
+    <section id="v-jij" class="view" hidden>
+      <div id="jij-koppel" class="paneel" hidden>
+        <svg class="i"><use href="#i-ik"/></svg>
+        <h2>Koppel je YouTube-account</h2>
+        <p>Dan zie je hier je afspeellijsten en de video’s die je leuk vindt, en onder Abonnementen de nieuwste video’s van je kanalen.</p>
+        <ol>
+          <li>Open de Alexa-app op je telefoon.</li>
+          <li>Ga naar Vaardigheden, Mijn dashboard.</li>
+          <li>Kies Account koppelen en log in met het Google-account van je YouTube.</li>
+        </ol>
+      </div>
+      <div id="jij-inhoud" hidden>
+        <div class="rij-kop"><h2>Afspeellijsten</h2></div>
+        <p class="melding" id="m-lijsten"></p>
+        <div class="rij" id="r-lijsten"></div>
+        <div class="rij-kop"><h2>Video’s die je leuk vindt</h2></div>
+        <p class="melding" id="m-leuk"></p>
+        <div class="rij" id="r-leuk"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div id="kijk" hidden>
+  <div id="kijk-links">
+    <div id="speler-vak">
+      <div id="speler"></div>
+      <button id="terug" class="overlay"><svg class="i"><use href="#i-terug"/></svg>Terug</button>
+      <button id="vol" class="overlay" aria-label="Volledig scherm"><svg class="i"><use href="#i-vol"/></svg></button>
     </div>
-    <form id="zoek" autocomplete="off">
-      <input id="zoekveld" type="search" placeholder="Zoeken" enterkeyhint="search" aria-label="Zoeken">
-      <button type="submit" aria-label="Zoeken"><svg class="icoon" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg></button>
-    </form>
-    <button id="mic" aria-label="Zoeken met je stem"><svg class="icoon" viewBox="0 0 24 24"><path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3zm5.3-3a5.3 5.3 0 0 1-10.6 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-1.7z"/></svg></button>
-  </header>
-  <nav id="chips"></nav>
-  <main>
-    <h1 id="kop">Laden…</h1>
-    <p id="melding"></p>
-    <div id="raster"></div>
-  </main>
+    <div id="info">
+      <h1 id="v-titel"></h1>
+      <div class="kanaal-rij"><span class="avatar" id="v-avatar"></span><b id="v-kanaal"></b></div>
+      <button id="beschrijving"><span class="meta" id="v-meta"></span><span id="v-tekst"></span></button>
+    </div>
+  </div>
+  <aside id="volgende">
+    <div class="vk"><h2>Volgende</h2><button class="schakel aan" id="autoplay">Automatisch afspelen <i></i></button></div>
+    <div id="l-volgende"></div>
+    <div class="sectie" id="k-kanaal" hidden></div>
+    <div id="l-kanaal"></div>
+  </aside>
 </div>
-<div id="laag" hidden>
-  <div id="speler"></div>
-  <button id="terug"><svg viewBox="0 0 24 24"><path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>Terug</button>
-</div>
+
 <div id="toast" role="status"></div>
 <div id="status">Laden…</div>
+
 <script>
 'use strict';
-const STANDAARD_CATEGORIEEN = [{ id: '', naam: 'Populair' }];
-const staat = { alexa: null, categorie: '', speler: null, ytKlaar: false, wacht: null, stilTimer: 0 };
 const $ = (id) => document.getElementById(id);
+const staat = {
+  alexa: null,
+  gekoppeld: false,
+  tab: 'start',
+  categorie: '',
+  terugNaar: 'start',
+  huidig: null,
+  context: [],
+  kanaal: [],
+  autoplay: true,
+  speler: null,
+  ytKlaar: false,
+  wacht: null,
+  jijGeladen: false,
+  aboGeladen: false,
+};
+
+// ---------- formatting ----------
+const getal = new Intl.NumberFormat('nl-NL', { notation: 'compact', maximumFractionDigits: 1 });
+const rtf = new Intl.RelativeTimeFormat('nl', { numeric: 'always' });
+function weergaven(n) { return n == null ? '' : `${getal.format(n)} weergaven`; }
+function geleden(iso) {
+  let w = (Date.now() - Date.parse(iso)) / 1000;
+  if (!Number.isFinite(w)) return '';
+  for (const [n, eenheid] of [[60, 'second'], [60, 'minute'], [24, 'hour'], [7, 'day'], [4.345, 'week'], [12, 'month'], [Infinity, 'year']]) {
+    if (w < n) return rtf.format(-Math.max(1, Math.floor(w)), eenheid);
+    w /= n;
+  }
+  return '';
+}
+function meta(v) { return [weergaven(v.weergaven), v.geplaatst ? geleden(v.geplaatst) : ''].filter(Boolean).join(' · '); }
+function duim(v, groot) {
+  if (v.soort === 'afspeellijst') return v.thumb;
+  return `https://i.ytimg.com/vi/${v.id}/${groot ? 'hqdefault' : 'mqdefault'}.jpg`;
+}
 
 function toast(tekst) {
   const t = $('toast');
@@ -112,79 +272,196 @@ function toast(tekst) {
   toast.timer = setTimeout(() => t.classList.remove('zichtbaar'), 4000);
 }
 
+// ---------- talking to the skill ----------
+let teller = 0;
+const laatstePerVak = new Map();
+const doelen = new Map();
 function stuur(bericht) {
   if (!staat.alexa) { toast('Deze pagina werkt binnen de YouTube-skill op de Echo Show.'); return false; }
   try { staat.alexa.skill.sendMessage(bericht); return true; } catch (e) { toast('Bericht aan Alexa mislukt.'); return false; }
 }
-
-function chips(categorieen) {
-  const nav = $('chips');
-  nav.replaceChildren();
-  for (const c of categorieen && categorieen.length ? categorieen : STANDAARD_CATEGORIEEN) {
-    const b = document.createElement('button');
-    b.className = 'chip';
-    b.textContent = c.naam;
-    b.dataset.id = c.id;
-    b.addEventListener('click', () => {
-      if (stuur({ type: 'categorie', categorie: c.id })) laden(c.naam);
-    });
-    nav.append(b);
-  }
-  markeer();
+/** Sends a request with a number; the answer goes to doel, unless a newer request for the same spot was sent since. */
+function vraag(bericht, vak, doel) {
+  const n = ++teller;
+  laatstePerVak.set(vak, n);
+  doelen.set(n, (lijst) => { if (laatstePerVak.get(vak) === n) doel(lijst); });
+  return stuur({ ...bericht, verzoek: n });
 }
 
-function markeer() {
+function ontvang(m) {
+  if (!m || (m.type !== 'lijst' && m.type !== 'kanaal')) return;
+  if (m.verzoek != null) {
+    const doel = doelen.get(m.verzoek);
+    doelen.delete(m.verzoek);
+    if (doel) doel(m.lijst || {});
+    return;
+  }
+  // No request number: Alexa was asked by voice while the page is open. A search shows its results, also over the
+  // player; "open YouTube" brings back Start.
+  const lijst = m.lijst || {};
+  sluitKijk();
+  if (lijst.zoekterm) { toonLijst(lijst, staat.tab); return; }
+  kiesTab('start');
+  toonStart(lijst);
+}
+
+// ---------- building blocks ----------
+/** A channel picture, or the first letter of the channel when there is none. */
+function avatar(v) {
+  if (v.avatar) {
+    const img = document.createElement('img');
+    img.className = 'avatar';
+    img.src = v.avatar;
+    img.alt = '';
+    img.loading = 'lazy';
+    return img;
+  }
+  const s = document.createElement('span');
+  s.className = 'avatar';
+  s.textContent = (v.kanaal || '?').trim().charAt(0).toUpperCase();
+  return s;
+}
+
+function kaart(v, context) {
+  const k = document.createElement('button');
+  k.className = 'kaart';
+  const d = document.createElement('div');
+  d.className = 'duim';
+  const img = document.createElement('img');
+  img.src = duim(v, true);
+  img.alt = '';
+  img.loading = 'lazy';
+  d.append(img);
+  const isLijst = v.soort === 'afspeellijst';
+  if (v.duur) {
+    const s = document.createElement('span');
+    s.className = isLijst ? 'duur lijst' : v.duur === 'LIVE' ? 'duur live' : 'duur';
+    s.textContent = isLijst ? `☰ ${v.duur} video’s` : v.duur;
+    d.append(s);
+  }
+  const onder = document.createElement('div');
+  onder.className = 'onder';
+  if (!isLijst) onder.append(avatar(v));
+  const tekst = document.createElement('div');
+  tekst.className = 'tekst';
+  const h = document.createElement('h3');
+  h.textContent = v.titel;
+  const p = document.createElement('p');
+  p.textContent = isLijst ? 'Afspeellijst' : [v.kanaal, meta(v)].filter(Boolean).join(' · ');
+  tekst.append(h, p);
+  onder.append(tekst);
+  k.append(d, onder);
+  k.addEventListener('click', () => (isLijst ? openAfspeellijst(v) : kijk(v, context)));
+  return k;
+}
+
+function skelet(el, n = 6) {
+  el.replaceChildren();
+  for (let i = 0; i < n; i++) {
+    const k = document.createElement('div');
+    k.className = 'kaart leeg';
+    k.innerHTML = '<div class="duim"></div><div class="onder"><span class="avatar"></span><div class="tekst"><div class="regel"></div><div class="regel kort"></div></div></div>';
+    el.append(k);
+  }
+}
+
+function vul(el, melding, lijst) {
+  const items = lijst.items || [];
+  el.replaceChildren(...items.map((v) => kaart(v, items)));
+  melding.textContent = lijst.melding || (lijst.fout ? `YouTube gaf geen lijst (${lijst.fout}).` : items.length ? '' : 'Geen video’s gevonden.');
+}
+
+// ---------- views ----------
+function toonView(naam) {
+  for (const v of document.querySelectorAll('.view')) v.hidden = v.id !== `v-${naam}`;
+}
+function markeerTab(tab) {
+  for (const b of document.querySelectorAll('.tab')) b.classList.toggle('actief', b.dataset.tab === tab);
+}
+function kiesTab(tab) {
+  staat.tab = tab;
+  markeerTab(tab);
+  if (tab === 'start') { toonView('start'); return; }
+  if (!staat.gekoppeld) { koppelUitleg(); return; }
+  if (tab === 'abonnementen') {
+    toonView('lijst');
+    $('lijst-terug').hidden = true;
+    $('k-lijst').textContent = 'Abonnementen';
+    if (!staat.aboGeladen) {
+      skelet($('r-lijst'));
+      $('m-lijst').textContent = '';
+      vraag({ type: 'categorie', categorie: '@abonnementen' }, 'lijst', (l) => { staat.aboGeladen = true; vul($('r-lijst'), $('m-lijst'), l); });
+    }
+    return;
+  }
+  toonView('jij');
+  $('jij-koppel').hidden = true;
+  $('jij-inhoud').hidden = false;
+  if (staat.jijGeladen) return;
+  staat.jijGeladen = true;
+  skelet($('r-lijsten'), 4);
+  skelet($('r-leuk'), 4);
+  vraag({ type: 'categorie', categorie: '@afspeellijsten' }, 'lijsten', (l) => vul($('r-lijsten'), $('m-lijsten'), l));
+  vraag({ type: 'categorie', categorie: '@leuk' }, 'leuk', (l) => vul($('r-leuk'), $('m-leuk'), l));
+}
+/** Not linked: the explanation on screen, and once per session a link card in the Alexa app. */
+function koppelUitleg() {
+  markeerTab(staat.tab);
+  toonView('jij');
+  $('jij-koppel').hidden = false;
+  $('jij-inhoud').hidden = true;
+  if (!koppelUitleg.gestuurd) { koppelUitleg.gestuurd = true; vraag({ type: 'categorie', categorie: '@abonnementen' }, 'koppel', () => {}); }
+}
+
+function toonStart(lijst) {
+  staat.categorie = lijst.categorie || '';
+  markeerChips();
+  vul($('r-start'), $('m-start'), lijst);
+}
+function chips(categorieen) {
+  const box = $('chips');
+  box.replaceChildren();
+  for (const c of categorieen && categorieen.length ? categorieen : [{ id: '', naam: 'Populair' }]) {
+    const b = document.createElement('button');
+    b.className = 'chip';
+    b.textContent = c.id === '' ? 'Alles' : c.naam;
+    b.dataset.id = c.id;
+    b.addEventListener('click', () => {
+      staat.categorie = c.id;
+      markeerChips();
+      skelet($('r-start'));
+      $('m-start').textContent = '';
+      vraag({ type: 'categorie', categorie: c.id }, 'start', toonStart);
+    });
+    box.append(b);
+  }
+  markeerChips();
+}
+function markeerChips() {
   for (const b of document.querySelectorAll('.chip')) b.classList.toggle('actief', b.dataset.id === staat.categorie);
 }
 
-function laden(kop) {
-  $('kop').textContent = kop;
-  $('melding').textContent = '';
-  $('raster').classList.add('laden');
+/** Search results, a playlist or a spoken search: the list view with a back arrow to the tab it came from. */
+function toonLijst(lijst, terugNaar) {
+  staat.terugNaar = terugNaar || staat.tab;
+  toonView('lijst');
+  $('lijst-terug').hidden = false;
+  $('k-lijst').textContent = lijst.titel || 'YouTube';
+  vul($('r-lijst'), $('m-lijst'), lijst);
 }
-
-function toon(lijst) {
-  lijst = lijst || {};
-  $('raster').classList.remove('laden');
-  staat.categorie = lijst.zoekterm ? null : (lijst.categorie || '');
-  markeer();
-  $('kop').textContent = lijst.titel || 'YouTube';
-  const items = lijst.items || [];
-  $('melding').classList.toggle('koppel', Boolean(lijst.melding));
-  $('melding').textContent = lijst.melding || (lijst.fout ? `YouTube gaf geen lijst (${lijst.fout}).` : (items.length ? '' : 'Geen video’s gevonden.'));
-  const raster = $('raster');
-  raster.replaceChildren();
-  for (const v of items) {
-    const kaart = document.createElement('button');
-    kaart.className = 'kaart';
-    const duim = document.createElement('div');
-    duim.className = 'duim';
-    const img = document.createElement('img');
-    img.src = v.thumb;
-    img.alt = '';
-    img.loading = 'lazy';
-    duim.append(img);
-    const isLijst = v.soort === 'afspeellijst';
-    if (v.duur) {
-      const d = document.createElement('span');
-      d.className = isLijst ? 'duur lijst' : v.duur === 'LIVE' ? 'duur live' : 'duur';
-      d.textContent = isLijst ? `☰ ${v.duur}` : v.duur;
-      duim.append(d);
-    }
-    const h = document.createElement('h3');
-    h.textContent = v.titel;
-    const p = document.createElement('p');
-    p.textContent = v.kanaal;
-    kaart.append(duim, h, p);
-    kaart.addEventListener('click', () => {
-      if (!isLijst) { speel(v.id); return; }
-      if (stuur({ type: 'afspeellijst', id: v.id, titel: v.titel })) laden(v.titel);
-    });
-    raster.append(kaart);
-  }
-  document.querySelector('main').scrollTop = 0;
+function laadLijst(titel, bericht) {
+  const terugNaar = staat.tab;
+  staat.terugNaar = terugNaar;
+  toonView('lijst');
+  $('lijst-terug').hidden = false;
+  $('k-lijst').textContent = titel;
+  $('m-lijst').textContent = '';
+  skelet($('r-lijst'));
+  vraag(bericht, 'lijst', (l) => toonLijst(l, terugNaar));
 }
+function openAfspeellijst(v) { laadLijst(v.titel, { type: 'afspeellijst', id: v.id, titel: v.titel }); }
 
+// ---------- watching ----------
 const FOUTEN = {
   2: 'Deze video heeft een ongeldig adres.',
   5: 'Deze video kan hier niet worden afgespeeld.',
@@ -193,35 +470,121 @@ const FOUTEN = {
   150: 'De maker staat afspelen buiten YouTube niet toe.',
 };
 
-function terugZichtbaar() {
-  const t = $('terug');
-  t.classList.remove('stil');
-  clearTimeout(staat.stilTimer);
-  staat.stilTimer = setTimeout(() => t.classList.add('stil'), 4000);
+function overlaysZichtbaar() {
+  for (const o of document.querySelectorAll('.overlay')) o.classList.remove('stil');
+  clearTimeout(overlaysZichtbaar.timer);
+  overlaysZichtbaar.timer = setTimeout(() => { for (const o of document.querySelectorAll('.overlay')) o.classList.add('stil'); }, 4000);
+}
+
+function kijk(v, context) {
+  staat.huidig = v;
+  staat.context = (context || []).filter((x) => x.soort !== 'afspeellijst');
+  $('kijk').hidden = false;
+  overlaysZichtbaar();
+  $('v-titel').textContent = v.titel;
+  $('v-kanaal').textContent = v.kanaal || '';
+  const a = avatar(v);
+  a.id = 'v-avatar';
+  $('v-avatar').replaceWith(a);
+  $('v-meta').textContent = meta(v);
+  $('v-tekst').textContent = v.beschrijving || '';
+  $('v-tekst').style.whiteSpace = '';
+  $('kijk-links').scrollTop = 0;
+  staat.kanaal = [];
+  toonVolgende();
+  $('k-kanaal').hidden = true;
+  $('l-kanaal').replaceChildren();
+  if (v.kanaalId) {
+    vraag({ type: 'kanaal', kanaalId: v.kanaalId }, 'kanaal', (l) => {
+      const al = new Set([v.id, ...volgendeLijst().map((x) => x.id)]);
+      staat.kanaal = (l.items || []).filter((x) => !al.has(x.id));
+      $('k-kanaal').textContent = l.titel || 'Meer van dit kanaal';
+      $('k-kanaal').hidden = !staat.kanaal.length;
+      $('l-kanaal').replaceChildren(...staat.kanaal.map((x) => klein(x, staat.kanaal)));
+    });
+  }
+  speel(v.id);
+}
+
+/** "Volgende": the rest of the list the video came from, starting after it. */
+function volgendeLijst() {
+  if (!staat.huidig) return [];
+  const i = staat.context.findIndex((x) => x.id === staat.huidig.id);
+  return i < 0 ? staat.context.slice() : [...staat.context.slice(i + 1), ...staat.context.slice(0, i)];
+}
+function toonVolgende() {
+  $('l-volgende').replaceChildren(...volgendeLijst().slice(0, 20).map((x) => klein(x, staat.context)));
+  $('volgende').scrollTop = 0;
+}
+function klein(v, context) {
+  const k = document.createElement('button');
+  k.className = 'klein';
+  const d = document.createElement('div');
+  d.className = 'duim';
+  const img = document.createElement('img');
+  img.src = duim(v, false);
+  img.alt = '';
+  img.loading = 'lazy';
+  d.append(img);
+  if (v.duur) {
+    const s = document.createElement('span');
+    s.className = v.duur === 'LIVE' ? 'duur live' : 'duur';
+    s.textContent = v.duur;
+    d.append(s);
+  }
+  const t = document.createElement('div');
+  const h = document.createElement('h3');
+  h.textContent = v.titel;
+  const p = document.createElement('p');
+  p.textContent = [v.kanaal, meta(v)].filter(Boolean).join(' · ');
+  t.append(h, p);
+  k.append(d, t);
+  k.addEventListener('click', () => kijk(v, context));
+  return k;
+}
+
+function speelVolgende() {
+  const volgende = volgendeLijst()[0];
+  if (volgende) kijk(volgende, staat.context);
+  else if (staat.kanaal[0]) kijk(staat.kanaal[0], staat.kanaal);
+  else sluitKijk();
 }
 
 function speel(id) {
-  $('laag').hidden = false;
-  terugZichtbaar();
   if (!staat.ytKlaar) { staat.wacht = id; return; }
   if (staat.speler) { staat.speler.loadVideoById(id); return; }
   staat.speler = new YT.Player('speler', {
     videoId: id,
     width: '100%',
     height: '100%',
-    playerVars: { autoplay: 1, playsinline: 1, rel: 0, fs: 0, hl: 'nl', cc_lang_pref: 'nl', origin: location.origin },
+    playerVars: { autoplay: 1, playsinline: 1, rel: 0, fs: 0, iv_load_policy: 3, hl: 'nl', origin: location.origin },
     events: {
       onReady: (e) => e.target.playVideo(),
-      onStateChange: (e) => { if (e.data === YT.PlayerState.ENDED) sluit(); },
-      onError: (e) => { toast(FOUTEN[e.data] || `Afspelen mislukt (${e.data}).`); sluit(); },
+      onStateChange: (e) => {
+        if (e.data === YT.PlayerState.PLAYING && staat.ondertitelsUit !== staat.huidig.id) {
+          // Like the YouTube app: captions start off; the CC button in the player turns them on.
+          staat.ondertitelsUit = staat.huidig.id;
+          try { e.target.unloadModule('captions'); } catch (fout) { /* the player keeps its own choice */ }
+        }
+        if (e.data === YT.PlayerState.ENDED) { if (staat.autoplay) speelVolgende(); else overlaysZichtbaar(); }
+      },
+      onError: (e) => {
+        toast(FOUTEN[e.data] || `Afspelen mislukt (${e.data}).`);
+        if (staat.autoplay) setTimeout(speelVolgende, 1500);
+      },
     },
   });
 }
 
-function sluit() {
+function sluitKijk() {
   if (staat.speler && staat.speler.stopVideo) staat.speler.stopVideo();
   staat.wacht = null;
-  $('laag').hidden = true;
+  zetVolledig(false);
+  $('kijk').hidden = true;
+}
+function zetVolledig(aan) {
+  $('kijk').classList.toggle('volledig', aan);
+  $('vol').querySelector('use').setAttribute('href', aan ? '#i-klein' : '#i-vol');
 }
 
 window.onYouTubeIframeAPIReady = () => {
@@ -230,13 +593,31 @@ window.onYouTubeIframeAPIReady = () => {
   if (staat.wacht) { const id = staat.wacht; staat.wacht = null; speel(id); }
 };
 
-$('terug').addEventListener('click', sluit);
+// ---------- controls ----------
+for (const b of document.querySelectorAll('.tab')) b.addEventListener('click', () => kiesTab(b.dataset.tab));
+$('ik').addEventListener('click', () => kiesTab('jij'));
+$('lijst-terug').addEventListener('click', () => kiesTab(staat.terugNaar || 'start'));
+$('terug').addEventListener('click', () => {
+  if ($('kijk').classList.contains('volledig')) { zetVolledig(false); overlaysZichtbaar(); return; }
+  sluitKijk();
+});
+$('vol').addEventListener('click', () => { zetVolledig(!$('kijk').classList.contains('volledig')); overlaysZichtbaar(); });
+$('speler-vak').addEventListener('pointerdown', overlaysZichtbaar);
+$('autoplay').addEventListener('click', () => {
+  staat.autoplay = !staat.autoplay;
+  $('autoplay').classList.toggle('aan', staat.autoplay);
+});
+$('beschrijving').addEventListener('click', () => {
+  const t = $('v-tekst');
+  t.style.whiteSpace = t.style.whiteSpace ? '' : 'pre-wrap';
+});
 $('zoek').addEventListener('submit', (e) => {
   e.preventDefault();
   const q = $('zoekveld').value.trim();
   if (!q) return;
   $('zoekveld').blur();
-  if (stuur({ type: 'zoek', zoekterm: q })) laden(`Zoeken naar “${q}”…`);
+  sluitKijk();
+  laadLijst(`Resultaten voor “${q}”`, { type: 'zoek', zoekterm: q });
 });
 $('mic').addEventListener('click', () => {
   if (!staat.alexa || !staat.alexa.voice) { toast('Zeg: “Alexa, search for …”'); return; }
@@ -251,33 +632,29 @@ $('mic').addEventListener('click', () => {
   }
 });
 
-const yt = document.createElement('script');
-yt.src = 'https://www.youtube.com/iframe_api';
-document.head.append(yt);
-
-function ontvang(m) {
-  if (!m) return;
-  if (m.type === 'lijst') { sluit(); toon(m.lijst); }
-}
-
+// ---------- start ----------
 const stappen = { pagina: 'ok', alexa: '…', verbinding: '…', speler: '…' };
 function stap(naam, waarde) {
   stappen[naam] = waarde;
   const s = $('status');
   s.textContent = `pagina ${stappen.pagina} · Alexa ${stappen.alexa} · verbinding ${stappen.verbinding} · speler ${stappen.speler}`;
-  const klaar = Object.values(stappen).every((w) => w === 'ok');
   clearTimeout(stap.timer);
-  if (klaar) stap.timer = setTimeout(() => s.classList.add('weg'), 4000);
+  if (Object.values(stappen).every((w) => w === 'ok')) stap.timer = setTimeout(() => s.classList.add('weg'), 4000);
   else s.classList.remove('weg');
 }
 stap('pagina', 'ok');
 setTimeout(() => { if (!staat.ytKlaar) stap('speler', 'niet geladen'); }, 15000);
+chips(null);
+skelet($('r-start'), 9);
 
-chips(STANDAARD_CATEGORIEEN);
+const yt = document.createElement('script');
+yt.src = 'https://www.youtube.com/iframe_api';
+document.head.append(yt);
+
 const bib = document.createElement('script');
 bib.src = 'https://cdn.html.games.alexa.a2z.com/alexa-html/latest/alexa-html.js';
 bib.onload = () => { stap('alexa', 'ok'); start(); };
-bib.onerror = () => { stap('alexa', 'niet geladen'); $('kop').textContent = 'YouTube'; $('melding').textContent = 'De Alexa-bibliotheek laadt niet; zonder die kan de pagina de skill niet bereiken.'; };
+bib.onerror = () => { stap('alexa', 'niet geladen'); $('m-start').textContent = 'De Alexa-bibliotheek laadt niet; zonder die kan de pagina de skill niet bereiken.'; $('r-start').replaceChildren(); };
 document.head.append(bib);
 
 function start() {
@@ -293,8 +670,11 @@ function start() {
       } catch (e) {
         // Older runtimes have no voice events; the video then simply keeps its volume.
       }
-      chips(message && message.categorieen);
-      toon(message && message.lijst);
+      const data = message || {};
+      staat.gekoppeld = Boolean(data.gekoppeld);
+      $('ik').classList.toggle('gekoppeld', staat.gekoppeld);
+      chips(data.categorieen);
+      toonStart(data.lijst || {});
       // The web app session ends after 300 s without interaction; a ping now and then keeps it while a video runs.
       setInterval(() => stuur({ type: 'blijf' }), 60000);
       stuur({ type: 'gestart', ua: navigator.userAgent, breed: innerWidth, hoog: innerHeight, dpr: devicePixelRatio, speler: staat.ytKlaar });
@@ -302,8 +682,8 @@ function start() {
     .catch((e) => {
       const code = e && e.code ? e.code : String(e);
       stap('verbinding', `fout ${code}`);
-      $('kop').textContent = 'YouTube';
-      $('melding').textContent = `Alexa niet bereikbaar (${code}). Deze pagina werkt binnen de YouTube-skill op de Echo Show.`;
+      $('r-start').replaceChildren();
+      $('m-start').textContent = `Alexa niet bereikbaar (${code}). Deze pagina werkt binnen de YouTube-skill op de Echo Show.`;
     });
 }
 </script>
