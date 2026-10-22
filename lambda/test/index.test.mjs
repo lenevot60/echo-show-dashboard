@@ -49,7 +49,9 @@ test('LaunchRequest shows the dashboard on a screen device', async () => {
   assert.ok(d)
   assert.equal(d.token, 'dashboard')
   assert.equal(d.datasources.ds.titel, 'Thuis')
-  assert.equal(res.response.shouldEndSession, true)
+  // The screen stays: an undefined shouldEndSession keeps the session open on a screen device.
+  assert.equal(res.response.shouldEndSession, undefined)
+  assert.equal(d.datasources.ds.blijf, true)
 })
 
 test('LaunchRequest without a screen only speaks', async () => {
@@ -149,4 +151,36 @@ test('every JSON in the skill package parses and the widget binds the data store
   lees(path.join('skill-package/dataStorePackages/dashboard-widget', tpl.datasourceUrl))
   for (const l of ['nl-NL', 'en-GB']) assert.ok(lees(`skill-package/interactionModels/custom/${l}.json`).interactionModel.languageModel.invocationName)
   assert.equal(lees('lambda/apl/dashboard.json').mainTemplate.parameters[0], 'payload')
+})
+
+test('a keep-alive ping keeps the screen without speech, and redraws once the data is older than verversMinuten', async () => {
+  const { skill } = maak()
+  const vers = await skill.invoke(envelope({ type: 'Alexa.Presentation.APL.UserEvent', token: 'dashboard', arguments: ['blijf', new Date().toISOString()] }))
+  assert.equal(vers.response.outputSpeech, undefined)
+  assert.equal(vers.response.shouldEndSession, undefined)
+  assert.equal(directive(vers), undefined)
+  const oud = await skill.invoke(envelope({ type: 'Alexa.Presentation.APL.UserEvent', token: 'dashboard', arguments: ['blijf', '2026-01-01T00:00:00Z'] }))
+  assert.ok(directive(oud))
+  assert.equal(oud.response.shouldEndSession, undefined)
+})
+
+test('stop still closes the screen', async () => {
+  const { skill } = maak()
+  const res = await skill.invoke(envelope({ type: 'IntentRequest', intent: { name: 'AMAZON.StopIntent' } }))
+  assert.equal(res.response.shouldEndSession, true)
+})
+
+test('the dashboard document pings on its own sequencer and asks for a longer idle time', () => {
+  const fs = require('node:fs')
+  const path = require('node:path')
+  const { fileURLToPath } = require('node:url')
+  const doc = JSON.parse(fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'apl', 'dashboard.json'), 'utf8'))
+  assert.equal(doc.settings.idleTimeout, 120000)
+  const top = doc.mainTemplate.items[0]
+  const tick = top.handleTick[0]
+  assert.equal(tick.minimumDelay, 25000)
+  assert.equal(tick.commands[0].type, 'SendEvent')
+  assert.equal(tick.commands[0].sequencer, 'blijf')
+  assert.equal(tick.commands[0].arguments[0], 'blijf')
+  assert.equal(doc.onMount, undefined)
 })

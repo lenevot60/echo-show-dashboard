@@ -50,12 +50,22 @@ function userId(handlerInput) {
   return handlerInput.requestEnvelope.context.System.user.userId;
 }
 
+/** Keep-alive settings from config.json: the screen stays while the device keeps pinging (see dashboard.json). */
+function blijfInstellingen() {
+  const c = bronnen.config();
+  return {
+    blijf: c.blijfOpScherm !== false,
+    verversMs: Math.max(1, Number(c.verversMinuten) || 10) * 60 * 1000,
+  };
+}
+
 function renderDashboard(content, extra = {}) {
+  const { blijf } = blijfInstellingen();
   return {
     type: 'Alexa.Presentation.APL.RenderDocument',
     token: TOKEN,
     document: dashboardDocument,
-    datasources: { ds: { ...content, ...extra } },
+    datasources: { ds: { ...content, blijf, ...extra } },
   };
 }
 
@@ -99,7 +109,8 @@ function buildSkill(deps = {}) {
       const s = t(h);
       if (!heeftApl(h)) return h.responseBuilder.speak(s.geenScherm).getResponse();
       const content = await verzamel();
-      return h.responseBuilder.speak(s.hier).addDirective(renderDashboard(content)).withShouldEndSession(true).getResponse();
+      // No withShouldEndSession: on a screen device the session (and the screen) then stays open, mic closed.
+      return h.responseBuilder.speak(s.hier).addDirective(renderDashboard(content)).getResponse();
     },
   };
 
@@ -109,8 +120,8 @@ function buildSkill(deps = {}) {
       const s = t(h);
       const { content } = await vernieuw(h);
       const rb = h.responseBuilder.speak(s.bijgewerkt);
-      if (heeftApl(h)) rb.addDirective(renderDashboard(content));
-      return rb.withShouldEndSession(true).getResponse();
+      if (!heeftApl(h)) return rb.withShouldEndSession(true).getResponse();
+      return rb.addDirective(renderDashboard(content)).getResponse();
     },
   };
 
@@ -121,7 +132,7 @@ function buildSkill(deps = {}) {
       const content = await verzamel();
       if (!content.web || !heeftApl(h)) return h.responseBuilder.speak(s.geenWeb).getResponse();
       // The document opens the URL on mount (OpenURL) when openWeb is set; Silk then shows the page.
-      return h.responseBuilder.speak(s.web).addDirective(renderDashboard(content, { openWeb: true })).withShouldEndSession(true).getResponse();
+      return h.responseBuilder.speak(s.web).addDirective(renderDashboard(content, { openWeb: true })).getResponse();
     },
   };
 
@@ -131,11 +142,9 @@ function buildSkill(deps = {}) {
       const s = t(h);
       const id = userId(h);
       const rb = h.responseBuilder.speak(s.id).withSimpleCard(s.kaartTitel, id);
-      if (heeftApl(h)) {
-        const content = await verzamel();
-        rb.addDirective(renderDashboard(content, { gebruikersId: id }));
-      }
-      return rb.withShouldEndSession(true).getResponse();
+      if (!heeftApl(h)) return rb.withShouldEndSession(true).getResponse();
+      const content = await verzamel();
+      return rb.addDirective(renderDashboard(content, { gebruikersId: id })).getResponse();
     },
   };
 
@@ -182,14 +191,23 @@ function buildSkill(deps = {}) {
       const actie = (h.requestEnvelope.request.arguments || [])[0];
       if (actie === 'openDashboard') {
         const content = await verzamel();
-        return h.responseBuilder.addDirective(renderDashboard(content)).withShouldEndSession(true).getResponse();
+        return h.responseBuilder.addDirective(renderDashboard(content)).getResponse();
       }
       if (actie === 'refresh') {
         const { content } = await vernieuw(h);
         const vanWidget = (h.requestEnvelope.request.arguments || [])[1] === 'widget';
-        const rb = h.responseBuilder;
-        if (!vanWidget) rb.addDirective(renderDashboard(content));
-        return rb.withShouldEndSession(true).getResponse();
+        if (vanWidget) return h.responseBuilder.withShouldEndSession(true).getResponse();
+        return h.responseBuilder.addDirective(renderDashboard(content)).getResponse();
+      }
+      if (actie === 'blijf') {
+        // Ping from the dashboard while it is on screen. An empty answer keeps the session (and the screen) open;
+        // after verversMinuten the screen is redrawn with fresh data.
+        const { blijf, verversMs } = blijfInstellingen();
+        if (!blijf) return h.responseBuilder.withShouldEndSession(true).getResponse();
+        const sinds = Date.parse((h.requestEnvelope.request.arguments || [])[1] || '');
+        if (Number.isFinite(sinds) && Date.now() - sinds < verversMs) return h.responseBuilder.getResponse();
+        const content = await verzamel();
+        return h.responseBuilder.addDirective(renderDashboard(content)).getResponse();
       }
       logger.log('Onbekende tik', JSON.stringify(h.requestEnvelope.request.arguments || []));
       return h.responseBuilder.speak(s.fallback).getResponse();

@@ -1,8 +1,9 @@
 {
   "type": "APL",
   "version": "2024.3",
-  "description": "Full-screen dashboard for the Echo Show (landscape hub). Datasource `ds` is the same object the widget reads from the data store, plus optional openWeb and gebruikersId.",
+  "description": "Full-screen dashboard for the Echo Show (landscape hub). Datasource ds is the same object the widget reads from the data store, plus blijf (keep the screen up), openWeb and gebruikersId. While blijf is true the screen sends a ping every 25 s; tick handlers run in fast mode, so the SendEvent runs on its own sequencer.",
   "import": [{ "name": "alexa-layouts", "version": "1.7.0" }],
+  "settings": { "idleTimeout": 120000 },
   "resources": [
     {
       "colors": {
@@ -11,13 +12,9 @@
         "inkt": "#FFFFFF",
         "inkt2": "#C9CDD6",
         "inkt3": "#8A90A0",
-        "accent": "#F2B705",
-        "accentInkt": "#14161C"
+        "accent": "#F2B705"
       }
     }
-  ],
-  "onMount": [
-    { "type": "OpenURL", "when": "${payload.ds.openWeb == true && payload.ds.web != null}", "source": "${payload.ds.web.url}" }
   ],
   "layouts": {
     "Kaart": {
@@ -54,6 +51,18 @@
         "paddingRight": 48,
         "paddingTop": 36,
         "paddingBottom": 28,
+        "onMount": [
+          { "type": "OpenURL", "when": "${payload.ds.openWeb == true && payload.ds.web != null}", "source": "${payload.ds.web.url}" }
+        ],
+        "handleTick": [
+          {
+            "when": "${payload.ds.blijf == true}",
+            "minimumDelay": 25000,
+            "commands": [
+              { "type": "SendEvent", "sequencer": "blijf", "arguments": ["blijf", "${payload.ds.bijgewerkt}"] }
+            ]
+          }
+        ],
         "items": [
           {
             "type": "Container",
@@ -84,11 +93,18 @@
                         "alignItems": "center",
                         "items": [
                           { "type": "Image", "source": "${payload.ds.weer.iconUrl}", "width": 120, "height": 120, "scale": "best-fit" },
-                          { "type": "Text", "text": "${payload.ds.weer.temperatuur}°", "fontSize": 120, "fontWeight": "700", "color": "@inkt", "paddingLeft": 16 }
+                          { "type": "Text", "text": "${payload.ds.weer.temperatuur}°", "fontSize": 120, "fontWeight": "700", "color": "@inkt", "paddingLeft": 16 },
+                          {
+                            "type": "Container",
+                            "paddingLeft": 32,
+                            "shrink": 1,
+                            "items": [
+                              { "type": "Text", "text": "${payload.ds.weer.beschrijving}", "fontSize": 28, "color": "@inkt2" },
+                              { "type": "Text", "text": "Wind ${payload.ds.weer.wind} · gevoel ${payload.ds.weer.gevoel}° · ${payload.ds.weer.luchtvochtigheid}%", "fontSize": 20, "color": "@inkt3", "paddingTop": 4 }
+                            ]
+                          }
                         ]
                       },
-                      { "type": "Text", "text": "${payload.ds.weer.beschrijving}", "fontSize": 28, "color": "@inkt2", "paddingTop": 8 },
-                      { "type": "Text", "text": "Wind ${payload.ds.weer.wind} · gevoel ${payload.ds.weer.gevoel}° · ${payload.ds.weer.luchtvochtigheid}%", "fontSize": 20, "color": "@inkt3", "paddingTop": 4 },
                       {
                         "type": "Container",
                         "direction": "row",
@@ -118,41 +134,32 @@
                   }
                 ]
               },
-              { "type": "Container", "width": 24 },
               {
-                "type": "Kaart",
-                "kop": "Notities",
+                "type": "Container",
+                "direction": "row",
+                "display": "${payload.ds.aantalItems > 0 ? 'normal' : 'none'}",
+                "width": "40%",
                 "items": [
+                  { "type": "Container", "width": 24 },
                   {
-                    "type": "Container",
-                    "display": "${payload.ds.aantalItems > 0 ? 'normal' : 'none'}",
-                    "data": "${payload.ds.items}",
+                    "type": "Kaart",
+                    "kop": "Notities",
                     "items": [
                       {
                         "type": "Container",
-                        "paddingBottom": 14,
+                        "data": "${payload.ds.items}",
                         "items": [
-                          { "type": "Text", "text": "${data.titel}", "fontSize": 26, "fontWeight": "600", "color": "@inkt", "maxLines": 2 },
-                          { "type": "Text", "text": "${data.sub}", "fontSize": 18, "color": "@inkt3", "display": "${data.sub ? 'normal' : 'none'}" }
+                          {
+                            "type": "Container",
+                            "paddingBottom": 14,
+                            "items": [
+                              { "type": "Text", "text": "${data.titel}", "fontSize": 26, "fontWeight": "600", "color": "@inkt", "maxLines": 2 },
+                              { "type": "Text", "text": "${data.sub}", "fontSize": 18, "color": "@inkt3", "display": "${data.sub ? 'normal' : 'none'}" }
+                            ]
+                          }
                         ]
                       }
                     ]
-                  },
-                  {
-                    "type": "Text",
-                    "display": "${payload.ds.aantalItems > 0 ? 'none' : 'normal'}",
-                    "text": "Nog geen notities. Zet regels in lambda/notities.json en zeg: ververs.",
-                    "fontSize": 22,
-                    "color": "@inkt2"
-                  },
-                  { "type": "Container", "grow": 1 },
-                  {
-                    "type": "Text",
-                    "display": "${payload.ds.gebruikersId ? 'normal' : 'none'}",
-                    "text": "Gebruikers-id voor tools/push.mjs: ${payload.ds.gebruikersId}",
-                    "fontSize": 14,
-                    "color": "@inkt3",
-                    "maxLines": 3
                   }
                 ]
               }
@@ -161,6 +168,7 @@
           {
             "type": "Container",
             "direction": "row",
+            "alignItems": "center",
             "paddingTop": 24,
             "items": [
               {
@@ -176,6 +184,16 @@
                 "buttonText": "${payload.ds.web ? payload.ds.web.titel : ''}",
                 "buttonStyle": "contained",
                 "primaryAction": [{ "type": "OpenURL", "source": "${payload.ds.web.url}" }]
+              },
+              { "type": "Container", "grow": 1 },
+              {
+                "type": "Text",
+                "display": "${payload.ds.gebruikersId ? 'normal' : 'none'}",
+                "text": "Gebruikers-id: ${payload.ds.gebruikersId}",
+                "fontSize": 14,
+                "color": "@inkt3",
+                "maxLines": 2,
+                "shrink": 1
               }
             ]
           }

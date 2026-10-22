@@ -7,5 +7,9 @@
   "_webUrl": "Volledige URL van je eigen webdashboard (bijvoorbeeld Home Assistant). Leeg = de webtegel blijft verborgen.",
   "webTitel": "Webdashboard",
   "datastoreEndpoint": "https://api.eu.amazonalexa.com/v1/datastore/commands",
-  "_datastoreEndpoint": "EU-endpoint voor een skill in een Europese Amazon-regio; Noord-Amerika is https://api.amazonalexa.com/v1/datastore/commands."
+  "_datastoreEndpoint": "EU-endpoint voor een skill in een Europese Amazon-regio; Noord-Amerika is https://api.amazonalexa.com/v1/datastore/commands.",
+  "blijfOpScherm": true,
+  "_blijfOpScherm": "true: het dashboard blijft staan zolang het in beeld is; de Show stuurt elke 25 seconden een seintje en de skill houdt de sessie open. false: het scherm sluit na ongeveer 30 seconden.",
+  "verversMinuten": 10,
+  "_verversMinuten": "Zolang het dashboard in beeld blijft, haalt de skill na dit aantal minuten nieuwe gegevens op."
 }
